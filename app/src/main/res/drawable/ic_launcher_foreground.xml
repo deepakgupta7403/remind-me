@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!--
+        Adaptive-icon canvas is 108x108dp; the safe zone (always visible
+        through every mask shape) is the center 66x66. The bell sits in
+        roughly the 30..78 box, which keeps it intact under circle, squircle,
+        and rounded-square masks.
+    -->
+
+    <!-- Soft shadow under the bell, gives it some weight. -->
+    <path
+        android:fillAlpha="0.22"
+        android:fillColor="#FF000000"
+        android:pathData="M30,80 C30,76 36,73 54,73 C72,73 78,76 78,80 C78,82 72,83 54,83 C36,83 30,82 30,80 Z" />
+
+    <!-- Top stem connecting bell to the carry-loop. -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M52,28 L56,28 L56,38 L52,38 Z" />
+
+    <!-- Carry loop at the top (donut shape). -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,22
+                          C57.5,22 60,24.5 60,28
+                          C60,31.5 57.5,34 54,34
+                          C50.5,34 48,31.5 48,28
+                          C48,24.5 50.5,22 54,22 Z
+                          M54,26
+                          C52.9,26 52,26.9 52,28
+                          C52,29.1 52.9,30 54,30
+                          C55.1,30 56,29.1 56,28
+                          C56,26.9 55.1,26 54,26 Z" />
+
+    <!-- Bell body. Subtle inner gradient for a polished, non-flat look. -->
+    <path android:pathData="M54,34
+                            C40,34 32,44 32,58
+                            L32,68
+                            L28,73
+                            L28,77
+                            L80,77
+                            L80,73
+                            L76,68
+                            L76,58
+                            C76,44 68,34 54,34 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="32"
+                android:startY="34"
+                android:endX="80"
+                android:endY="77">
+                <item android:offset="0.0" android:color="#FFFFFFFF" />
+                <item android:offset="1.0" android:color="#FFE3E6F5" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Highlight stripe across the bell. -->
+    <path
+        android:fillAlpha="0.35"
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M40,42
+                          C46,38 52,37 56,38
+                          L54,46
+                          C50,46 44,48 40,52 Z" />
+
+    <!-- Clapper (small circle hanging below the rim). -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,79
+                          C57.5,79 60,81.5 60,85
+                          C60,88.5 57.5,91 54,91
+                          C50.5,91 48,88.5 48,85
+                          C48,81.5 50.5,79 54,79 Z" />
+
+    <!-- Amber accent dot inside the bell mouth — turns it into a "reminder" symbol. -->
+    <path
+        android:fillColor="#FFFFC857"
+        android:pathData="M54,64
+                          C56.2,64 58,65.8 58,68
+                          C58,70.2 56.2,72 54,72
+                          C51.8,72 50,70.2 50,68
+                          C50,65.8 51.8,64 54,64 Z" />
+</vector>

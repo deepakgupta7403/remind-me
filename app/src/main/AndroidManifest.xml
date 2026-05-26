@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Runtime permission for posting notifications (Android 13+). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- USE_EXACT_ALARM: granted at install time for reminder/alarm-clock apps.
+         SCHEDULE_EXACT_ALARM: fallback that requires user grant via Settings.
+         Declaring both lets us prefer USE_EXACT_ALARM where available. -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+    <!-- Re-schedule alarms after reboot. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Required so a fired reminder can take over the screen (lock-screen
+         and heads-up) like a real alarm. Android 14+ restricts this to apps
+         in the alarm/calendar/clock categories, which RemindMe qualifies as. -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
+    <!-- Vibrate while the alarm screen is showing. "Normal" permission —
+         granted at install time, no runtime prompt. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Foreground service used to forcibly launch the alarm screen from a
+         BroadcastReceiver. FGS has a reliable BAL exemption on Android 12+,
+         unlike calling startActivity from a receiver directly (which only
+         takes over the screen if the device is locked). SHORT_SERVICE is the
+         right type: the service exists for a few milliseconds, just long
+         enough to call startActivity. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SHORT_SERVICE" />
+
+    <application
+        android:name=".RemindMeApp"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher_remind_me"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_remind_me_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.RemindMe"
+        tools:targetApi="36">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.RemindMe">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Full-screen alarm UI launched from a fired reminder's fullScreenIntent.
+             showOnLockScreen + turnScreenOn so it behaves like a real alarm even
+             when the device is locked. excludeFromRecents because dismissing the
+             alert should not leave a stale entry in the recents stack. -->
+        <activity
+            android:name=".ui.screens.alert.ReminderAlertActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:showOnLockScreen="true"
+            android:showWhenLocked="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.RemindMe"
+            android:turnScreenOn="true" />
+
+        <!-- Fires when an alarm is delivered. Not exported: only our own
+             AlarmManager-issued PendingIntents can wake it. -->
+        <receiver
+            android:name=".scheduler.ReminderReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="in.deepak.remindme.action.FIRE_REMINDER" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Short-lived foreground service whose only job is to start
+             ReminderAlertActivity from a context that has a BAL exemption.
+             Stops itself after the activity launch. -->
+        <service
+            android:name=".scheduler.ReminderAlarmService"
+            android:exported="false"
+            android:foregroundServiceType="shortService" />
+
+        <!-- Re-arms alarms after reboot or app update. -->
+        <receiver
+            android:name=".scheduler.BootReceiver"
+            android:exported="true"
+            android:directBootAware="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+
+</manifest>

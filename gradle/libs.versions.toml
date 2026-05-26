@@ -1,0 +1,68 @@
+[versions]
+agp = "9.1.1"
+kotlin = "2.1.0"
+
+# AndroidX core / lifecycle
+coreKtx = "1.15.0"
+lifecycle = "2.8.7"
+activityCompose = "1.9.3"
+
+# Compose
+composeBom = "2024.12.01"
+navigationCompose = "2.8.5"
+
+# Coroutines
+coroutines = "1.9.0"
+
+# Persistence (JSON file via Gson — Room deferred until KSP/AGP 9 pairing stabilises)
+gson = "2.11.0"
+
+# Testing
+junit = "4.13.2"
+junitVersion = "1.2.1"
+espressoCore = "3.6.1"
+
+[libraries]
+# --- Core Android / Lifecycle ---
+androidx-core-ktx                       = { group = "androidx.core",          name = "core-ktx",                       version.ref = "coreKtx" }
+androidx-lifecycle-runtime-ktx          = { group = "androidx.lifecycle",     name = "lifecycle-runtime-ktx",          version.ref = "lifecycle" }
+androidx-lifecycle-runtime-compose      = { group = "androidx.lifecycle",     name = "lifecycle-runtime-compose",      version.ref = "lifecycle" }
+androidx-lifecycle-viewmodel-compose    = { group = "androidx.lifecycle",     name = "lifecycle-viewmodel-compose",    version.ref = "lifecycle" }
+
+# --- Compose (versions managed by BOM where omitted) ---
+androidx-activity-compose               = { group = "androidx.activity",      name = "activity-compose",               version.ref = "activityCompose" }
+androidx-compose-bom                    = { group = "androidx.compose",       name = "compose-bom",                    version.ref = "composeBom" }
+androidx-compose-ui                     = { group = "androidx.compose.ui",    name = "ui" }
+androidx-compose-ui-graphics            = { group = "androidx.compose.ui",    name = "ui-graphics" }
+androidx-compose-ui-tooling             = { group = "androidx.compose.ui",    name = "ui-tooling" }
+androidx-compose-ui-tooling-preview     = { group = "androidx.compose.ui",    name = "ui-tooling-preview" }
+androidx-compose-material3              = { group = "androidx.compose.material3", name = "material3" }
+androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
+
+# --- Navigation ---
+androidx-navigation-compose             = { group = "androidx.navigation",    name = "navigation-compose",             version.ref = "navigationCompose" }
+
+# --- Coroutines ---
+kotlinx-coroutines-android              = { group = "org.jetbrains.kotlinx",  name = "kotlinx-coroutines-android",     version.ref = "coroutines" }
+
+# --- Persistence ---
+# Gson chosen because it works with plain Kotlin data classes and requires
+# zero annotation processing — important until KSP/AGP 9 compatibility lands.
+# The repository interface insulates the rest of the app, so swapping to Room
+# later is a one-impl change.
+gson                                    = { group = "com.google.code.gson",   name = "gson",                           version.ref = "gson" }
+
+# --- Testing ---
+junit                                   = { group = "junit",                  name = "junit",                          version.ref = "junit" }
+androidx-junit                          = { group = "androidx.test.ext",      name = "junit",                          version.ref = "junitVersion" }
+androidx-espresso-core                  = { group = "androidx.test.espresso", name = "espresso-core",                  version.ref = "espressoCore" }
+androidx-compose-ui-test-junit4         = { group = "androidx.compose.ui",    name = "ui-test-junit4" }
+androidx-compose-ui-test-manifest       = { group = "androidx.compose.ui",    name = "ui-test-manifest" }
+
+[plugins]
+# Note: AGP 9.x bundles the Kotlin Android plugin, so we do NOT apply
+# `org.jetbrains.kotlin.android` separately — doing so collides on the
+# `kotlin` extension. The Compose compiler plugin is still applied explicitly.
+# KSP is added in Step 4 alongside Room.
+android-application = { id = "com.android.application",                version.ref = "agp" }
+kotlin-compose      = { id = "org.jetbrains.kotlin.plugin.compose",    version.ref = "kotlin" }

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!--
+        Brand palette — sourced from the design comp at
+        app/sampledata/onboarding.png. Used by onboarding now, and will be
+        reused on the upcoming list/edit redesigns. These are deliberately NOT
+        Material You dynamic colours: the design is the source of truth.
+    -->
+    <color name="brand_primary">#FF6366F1</color>
+    <color name="brand_on_primary">#FFFFFFFF</color>
+    <color name="brand_soft">#FFE0E2FF</color>
+    <color name="brand_danger">#FFE53935</color>
+
+    <color name="text_heading">#FF111114</color>
+    <color name="text_body">#FF5F6172</color>
+    <color name="dot_inactive">#33111114</color>
+
+    <!-- Neutrals used by cards/inputs/dividers across screens. -->
+    <color name="page_background">#FFF7F7FB</color>
+    <color name="surface_card">#FFFFFFFF</color>
+    <color name="surface_dim">#FFEEEEF4</color>
+    <color name="border_subtle">#FFE6E6EE</color>
+
+    <!-- One pair per reminder type: tile background + icon/foreground. -->
+    <color name="tile_interval_bg">#FFE0E4FF</color>
+    <color name="tile_interval_fg">#FF4F46E5</color>
+    <color name="tile_once_bg">#FFFCE7F0</color>
+    <color name="tile_once_fg">#FFDB2777</color>
+    <color name="tile_daily_bg">#FFFFE9C2</color>
+    <color name="tile_daily_fg">#FFEA580C</color>
+    <color name="tile_weekly_bg">#FFD4F0DC</color>
+    <color name="tile_weekly_fg">#FF16A34A</color>
+    <!-- "Sky" added for the Sleep template tile + future blue accents. -->
+    <color name="tile_sky_bg">#FFE0F2FE</color>
+    <color name="tile_sky_fg">#FF2563EB</color>
+
+    <!-- Heatmap palette for Stats (GitHub-style intensity scale). -->
+    <color name="heat_0">#FFEAEDED</color>
+    <color name="heat_1">#FFA8DEC5</color>
+    <color name="heat_2">#FF6BC8A4</color>
+    <color name="heat_3">#FF2EB37F</color>
+    <color name="heat_4">#FF15803D</color>
+</resources>

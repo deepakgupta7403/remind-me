@@ -1,0 +1,14 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!--
+        Base activity theme. Colors and typography are owned by Compose's
+        MaterialTheme (see ui/theme/). This XML theme only configures the
+        Activity window: no action bar, edge-to-edge friendly.
+    -->
+    <style name="Theme.RemindMe" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:enforceNavigationBarContrast" tools:targetApi="29">false</item>
+        <item name="android:enforceStatusBarContrast" tools:targetApi="29">false</item>
+    </style>
+</resources>

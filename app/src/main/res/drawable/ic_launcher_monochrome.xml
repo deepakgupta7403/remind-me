@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!--
+        Single-colour silhouette used by Android 13+ "themed icons". The OS
+        applies its own tint, so this MUST be flat white with no gradients,
+        no alpha tricks — anything fancier just looks broken when tinted.
+    -->
+
+    <!-- Top stem -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M52,28 L56,28 L56,38 L52,38 Z" />
+
+    <!-- Carry loop (donut) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,22
+                          C57.5,22 60,24.5 60,28
+                          C60,31.5 57.5,34 54,34
+                          C50.5,34 48,31.5 48,28
+                          C48,24.5 50.5,22 54,22 Z
+                          M54,26
+                          C52.9,26 52,26.9 52,28
+                          C52,29.1 52.9,30 54,30
+                          C55.1,30 56,29.1 56,28
+                          C56,26.9 55.1,26 54,26 Z" />
+
+    <!-- Bell body -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,34
+                          C40,34 32,44 32,58
+                          L32,68
+                          L28,73
+                          L28,77
+                          L80,77
+                          L80,73
+                          L76,68
+                          L76,58
+                          C76,44 68,34 54,34 Z" />
+
+    <!-- Clapper -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,79
+                          C57.5,79 60,81.5 60,85
+                          C60,88.5 57.5,91 54,91
+                          C50.5,91 48,88.5 48,85
+                          C48,81.5 50.5,79 54,79 Z" />
+</vector>
