@@ -1,25 +1,44 @@
 # Remind Me
 
-A clean, local-first reminder app for Android that adapts to how you actually schedule things — not just a glorified alarm clock.
+A clean, local-first reminder app for Android with four scheduling types — interval, once, daily, and weekly.
 
-## Why another reminder app?
+> **Built entirely with [Claude AI](https://claude.ai)** — UI/UX design, screens, icon, and implementation guidance.
 
-Most reminder apps force you into a single mental model: pick a date, pick a time, done. But reminders don't all work that way. "Drink water" needs to repeat every hour during the day. "Take vitamin D" is just a daily time. "Yoga" only happens on certain weekdays. "Mom's birthday" is a one-off.
+## Why this app exists
 
-Remind Me treats these as four distinct reminder types, each with a configuration screen tailored to its rhythm.
+I tried a lot of reminder apps on the Play Store. Every one of them was missing something:
+
+- Some require **creating an account** just to set a daily reminder.
+- Others lock the useful features (custom sounds, repeating intervals, themes) behind a **subscription**.
+- Most don't support **full-screen notifications** — the kind that actually grab your attention when the reminder fires, instead of a tiny banner you swipe away without thinking.
+- A few do one thing well but miss the basics (no weekly day picker, no quiet hours, no streak tracking).
+- And none of them combined **all** the features I wanted in a single, free, no-strings-attached app.
+
+So I built my own. **No login. No subscription. No ads. No data leaves your device.**
 
 ## Features
 
-- **Four reminder types** — Interval (every X minutes within a time range), Once (specific date + time), Daily (one time, every day), Weekly (pick weekdays + time)
-- **Quick toggle on/off per reminder** — pause without deleting
+- **Four reminder types**
+  - **Interval** — fires every X minutes within an active time range (e.g. drink water every hour from 8 am to 10 pm)
+  - **Once** — specific date and time, for birthdays, appointments, deadlines
+  - **Daily** — one time, every day, with optional "skip on weekends"
+  - **Weekly** — pick the weekdays + a time
+- **Full-screen notifications** with Done / Snooze / Skip actions — not just a banner
+- **Quick on/off toggle** per reminder — pause without deleting
 - **Color-coded categories** — Health, Work, Personal, or custom
-- **Smart notifications** — full-screen alarm screen with Done / Snooze / Skip actions, looping alarm sound + vibration, bypasses Do Not Disturb
-- **Streaks & stats** — 12-week heatmap and completion tracking to build habits
-- **Templates** — one-tap presets for common reminders (water, meds, walks, sleep)
-- **Search & filter** — find any reminder fast as your list grows
+- **Templates** — one-tap presets for common reminders (water, meds, walks, sleep, plants)
+- **Streaks & stats** — 12-week heatmap and completion tracking
+- **Search & filter** as your list grows
 - **Quiet hours** — Do Not Disturb window so reminders don't wake you up
+- **Custom notification sounds** per reminder type
 - **Dark mode** and customizable accent colors
-- **Local-first** — no account needed, no data leaves your device
+- **Local-first** — all data stored on device, no account required, fully offline
+
+## Built with Claude AI
+
+The entire app — every screen design, the icon, the navigation flow, the feature set, and the code — was designed and developed in collaboration with [Claude AI](https://claude.ai) by Anthropic. The project started as a list of feature requirements and grew through iterative conversation: Claude designed the 16 screens, picked the color palette, suggested the templates, and helped with implementation decisions like data modeling, notification scheduling, and the four-type architecture.
+
+If you're considering building a personal app and aren't sure where to start, this project is proof you don't need a team — a clear idea and a good AI collaborator can take you a long way.
 
 ## Tech stack
 
