@@ -67,6 +67,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import `in`.deepak.remindme.data.icons.ReminderIconPack
 import `in`.deepak.remindme.data.templates.ReminderTemplate
 import `in`.deepak.remindme.data.templates.TemplateTone
 import `in`.deepak.remindme.domain.model.Category
@@ -636,12 +637,13 @@ private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
 
 // --- Per-type icon + colour mirrors HomeScreen ---------------------------
 
-private fun iconFor(reminder: Reminder): ImageVector = when (reminder) {
-    is Reminder.Interval -> Icons.Filled.Refresh
-    is Reminder.OneTime  -> Icons.Filled.DateRange
-    is Reminder.Daily    -> Icons.Filled.WbSunny
-    is Reminder.Weekly   -> Icons.Filled.CalendarMonth
-}
+private fun iconFor(reminder: Reminder): ImageVector =
+    ReminderIconPack.imageOrNull(reminder.iconKey) ?: when (reminder) {
+        is Reminder.Interval -> Icons.Filled.Refresh
+        is Reminder.OneTime  -> Icons.Filled.DateRange
+        is Reminder.Daily    -> Icons.Filled.WbSunny
+        is Reminder.Weekly   -> Icons.Filled.CalendarMonth
+    }
 
 @Composable
 private fun tileColorsFor(reminder: Reminder): Pair<Color, Color> = when (reminder) {

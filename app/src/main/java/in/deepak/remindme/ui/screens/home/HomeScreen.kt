@@ -56,6 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import `in`.deepak.remindme.data.icons.ReminderIconPack
 import `in`.deepak.remindme.domain.model.Reminder
 import `in`.deepak.remindme.ui.navigation.Destination
 import `in`.deepak.remindme.ui.screens.common.AppBottomNavigation
@@ -473,12 +474,13 @@ private fun EmptyState(
 // returns the icon and the (tileBg, tileFg) pair from the brand palette so
 // adding a new reminder type lights up the compiler here.
 
-private fun iconFor(reminder: Reminder): ImageVector = when (reminder) {
-    is Reminder.Interval -> Icons.Filled.WaterDrop
-    is Reminder.OneTime  -> Icons.Filled.CardGiftcard
-    is Reminder.Daily    -> Icons.Filled.WbSunny
-    is Reminder.Weekly   -> Icons.Filled.CalendarMonth
-}
+private fun iconFor(reminder: Reminder): ImageVector =
+    ReminderIconPack.imageOrNull(reminder.iconKey) ?: when (reminder) {
+        is Reminder.Interval -> Icons.Filled.WaterDrop
+        is Reminder.OneTime  -> Icons.Filled.CardGiftcard
+        is Reminder.Daily    -> Icons.Filled.WbSunny
+        is Reminder.Weekly   -> Icons.Filled.CalendarMonth
+    }
 
 @Composable
 private fun tileColorsFor(reminder: Reminder): Pair<Color, Color> = when (reminder) {

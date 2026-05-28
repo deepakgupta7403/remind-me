@@ -22,6 +22,7 @@ internal fun Reminder.toDto(): ReminderDto = when (this) {
         enabled = enabled,
         type = ReminderDto.TYPE_INTERVAL,
         category = category.name,
+        iconKey = iconKey,
         intervalMinutes = intervalMinutes,
         activeStartMinute = activeWindow.start.minuteOfDay,
         activeEndMinute = activeWindow.end.minuteOfDay,
@@ -33,6 +34,7 @@ internal fun Reminder.toDto(): ReminderDto = when (this) {
         enabled = enabled,
         type = ReminderDto.TYPE_ONE_TIME,
         category = category.name,
+        iconKey = iconKey,
         triggerAtEpochMillis = triggerAtEpochMillis,
     )
 
@@ -42,6 +44,7 @@ internal fun Reminder.toDto(): ReminderDto = when (this) {
         enabled = enabled,
         type = ReminderDto.TYPE_DAILY,
         category = category.name,
+        iconKey = iconKey,
         timeOfDayMinute = timeOfDay.minuteOfDay,
         minutesBefore = minutesBefore,
         skipWeekends = skipWeekends,
@@ -53,6 +56,7 @@ internal fun Reminder.toDto(): ReminderDto = when (this) {
         enabled = enabled,
         type = ReminderDto.TYPE_WEEKLY,
         category = category.name,
+        iconKey = iconKey,
         timeOfDayMinute = timeOfDay.minuteOfDay,
         daysOfWeekBitmask = encodeDays(daysOfWeek),
     )
@@ -85,13 +89,14 @@ internal fun ReminderDto.toDomainOrNull(): Reminder? {
                         start = TimeOfDay.fromMinuteOfDay(startMin),
                         end = TimeOfDay.fromMinuteOfDay(endMin),
                     ),
+                    iconKey = iconKey,
                 )
             }.getOrNull()
         }
 
         ReminderDto.TYPE_ONE_TIME -> {
             val ts = triggerAtEpochMillis ?: return null
-            Reminder.OneTime(id, title, enabled, category, ts)
+            Reminder.OneTime(id, title, enabled, category, ts, iconKey)
         }
 
         ReminderDto.TYPE_DAILY -> {
@@ -105,6 +110,7 @@ internal fun ReminderDto.toDomainOrNull(): Reminder? {
                     timeOfDay = TimeOfDay.fromMinuteOfDay(tod),
                     minutesBefore = minutesBefore ?: 0,
                     skipWeekends = skipWeekends ?: false,
+                    iconKey = iconKey,
                 )
             }.getOrNull()
         }
@@ -120,6 +126,7 @@ internal fun ReminderDto.toDomainOrNull(): Reminder? {
                     category = category,
                     timeOfDay = TimeOfDay.fromMinuteOfDay(tod),
                     daysOfWeek = decodeDays(mask),
+                    iconKey = iconKey,
                 )
             }.getOrNull()
         }

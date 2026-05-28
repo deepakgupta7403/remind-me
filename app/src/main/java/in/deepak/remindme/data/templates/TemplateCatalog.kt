@@ -37,6 +37,7 @@ object TemplateCatalog {
                     category = Category.Health,
                     intervalMinutes = 60,
                     activeWindow = TimeWindow(TimeOfDay.of(8, 0), TimeOfDay.of(22, 0)),
+                    iconKey = "water",
                 )
             },
         ),
@@ -54,6 +55,7 @@ object TemplateCatalog {
                     enabled = true,
                     category = Category.Health,
                     timeOfDay = TimeOfDay.of(9, 0),
+                    iconKey = "medication",
                 )
             },
         ),
@@ -72,6 +74,7 @@ object TemplateCatalog {
                     category = Category.Personal,
                     intervalMinutes = 120,
                     activeWindow = TimeWindow(TimeOfDay.of(8, 0), TimeOfDay.of(22, 0)),
+                    iconKey = "walk",
                 )
             },
         ),
@@ -90,6 +93,7 @@ object TemplateCatalog {
                     category = Category.Work,
                     intervalMinutes = 20,
                     activeWindow = TimeWindow(TimeOfDay.of(9, 0), TimeOfDay.of(18, 0)),
+                    iconKey = "eye",
                 )
             },
         ),
@@ -107,6 +111,7 @@ object TemplateCatalog {
                     enabled = true,
                     category = Category.Personal,
                     timeOfDay = TimeOfDay.of(7, 0),
+                    iconKey = "meditate",
                 )
             },
         ),
@@ -124,6 +129,7 @@ object TemplateCatalog {
                     enabled = true,
                     category = Category.Health,
                     timeOfDay = TimeOfDay.of(22, 0),
+                    iconKey = "sleep",
                 )
             },
         ),

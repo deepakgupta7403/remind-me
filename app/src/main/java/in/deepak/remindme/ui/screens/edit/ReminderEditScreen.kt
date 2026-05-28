@@ -8,11 +8,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,11 +25,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -39,6 +47,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.ProgressIndicatorDefaults
@@ -47,6 +56,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -73,6 +83,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import `in`.deepak.remindme.data.icons.ReminderIconPack
 import `in`.deepak.remindme.domain.model.Category
 import `in`.deepak.remindme.domain.model.TimeOfDay
 import `in`.deepak.remindme.ui.state.ReminderForm
@@ -270,12 +281,198 @@ private fun Step1(
         onNewTap = onNewCategoryTap,
     )
 
+    Spacer(Modifier.height(20.dp))
+    SectionLabel("ICON")
+    Spacer(Modifier.height(10.dp))
+    var showIconPicker by rememberSaveable { mutableStateOf(false) }
+    IconSelectorRow(
+        selectedKey = form.iconKey,
+        onClick = { showIconPicker = true },
+        onClear = { onUpdate { it.copy(iconKey = null) } },
+    )
+    if (showIconPicker) {
+        IconPickerSheet(
+            selectedKey = form.iconKey,
+            onSelect = { key -> onUpdate { it.copy(iconKey = key) } },
+            onDismiss = { showIconPicker = false },
+        )
+    }
+
     Spacer(Modifier.height(28.dp))
     PrimaryCta(
         text = "Continue  →",
         enabled = form.title.isNotBlank(),
         onClick = onContinue,
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun IconSelectorRow(
+    selectedKey: String?,
+    onClick: () -> Unit,
+    onClear: () -> Unit,
+) {
+    val selected = ReminderIconPack.get(selectedKey)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = BrandColors.SurfaceCard),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(BrandColors.PrimarySoft),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = selected?.image ?: Icons.Filled.Apps,
+                    contentDescription = null,
+                    tint = BrandColors.Primary,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+            Spacer(Modifier.size(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = selected?.label ?: "Default icon",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = BrandColors.TextHeading,
+                )
+                Text(
+                    text = if (selected == null) "Based on reminder type · tap to choose" else "Tap to change",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BrandColors.TextBody,
+                )
+            }
+            if (selected != null) {
+                IconButton(onClick = onClear) {
+                    Icon(Icons.Filled.Close, contentDescription = "Clear icon", tint = BrandColors.TextBody)
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun IconPickerSheet(
+    selectedKey: String?,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var query by rememberSaveable { mutableStateOf("") }
+    val results = remember(query) { ReminderIconPack.search(query) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = BrandColors.PageBackground,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 24.dp),
+        ) {
+            Text(
+                text = "Choose an icon",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = BrandColors.TextHeading,
+            )
+            Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                placeholder = { Text("Search icons") },
+                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                trailingIcon = if (query.isNotEmpty()) ({
+                    IconButton(onClick = { query = "" }) {
+                        Icon(Icons.Filled.Close, contentDescription = "Clear", tint = BrandColors.TextBody)
+                    }
+                }) else null,
+                singleLine = true,
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = BrandColors.Primary,
+                    unfocusedBorderColor = BrandColors.BorderSubtle,
+                    focusedContainerColor = BrandColors.SurfaceCard,
+                    unfocusedContainerColor = BrandColors.SurfaceCard,
+                    cursorColor = BrandColors.Primary,
+                ),
+            )
+            Spacer(Modifier.height(16.dp))
+            if (results.isEmpty()) {
+                Text(
+                    text = "No icons match \"$query\".",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = BrandColors.TextBody,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 32.dp),
+                )
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(5),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 360.dp),
+                ) {
+                    items(results, key = { it.key }) { item ->
+                        IconChoice(
+                            icon = item.image,
+                            label = item.label,
+                            selected = item.key == selectedKey,
+                            onClick = { onSelect(item.key); onDismiss() },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun IconChoice(
+    icon: ImageVector,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = if (selected) BrandColors.PrimarySoft else BrandColors.SurfaceCard,
+        contentColor = if (selected) BrandColors.Primary else BrandColors.TextBody,
+        onClick = onClick,
+        modifier = modifier
+            .aspectRatio(1f)
+            .then(
+                if (selected) Modifier.border(2.dp, BrandColors.Primary, RoundedCornerShape(14.dp))
+                else Modifier.border(1.dp, BrandColors.BorderSubtle, RoundedCornerShape(14.dp))
+            ),
+    ) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+            Icon(icon, contentDescription = label, modifier = Modifier.size(22.dp))
+        }
+    }
 }
 
 @Composable

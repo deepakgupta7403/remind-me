@@ -26,6 +26,12 @@ sealed interface Reminder {
     val enabled: Boolean
     val category: Category
 
+    /**
+     * Optional icon-pack key from [in.deepak.remindme.data.icons.ReminderIconPack].
+     * Null means "use the per-type default icon" at the render site.
+     */
+    val iconKey: String?
+
     /** Repeating reminder that fires every [intervalMinutes] within [activeWindow]. */
     data class Interval(
         override val id: Long,
@@ -34,6 +40,7 @@ sealed interface Reminder {
         override val category: Category,
         val intervalMinutes: Int,
         val activeWindow: TimeWindow,
+        override val iconKey: String? = null,
     ) : Reminder {
         init {
             require(intervalMinutes in 1..1440) {
@@ -49,6 +56,7 @@ sealed interface Reminder {
         override val enabled: Boolean,
         override val category: Category,
         val triggerAtEpochMillis: Long,
+        override val iconKey: String? = null,
     ) : Reminder
 
     /**
@@ -70,6 +78,7 @@ sealed interface Reminder {
         val timeOfDay: TimeOfDay,
         val minutesBefore: Int = 0,
         val skipWeekends: Boolean = false,
+        override val iconKey: String? = null,
     ) : Reminder
 
     /** Same time on specified days of week (must have at least one day). */
@@ -80,6 +89,7 @@ sealed interface Reminder {
         override val category: Category,
         val timeOfDay: TimeOfDay,
         val daysOfWeek: Set<DayOfWeek>,
+        override val iconKey: String? = null,
     ) : Reminder {
         init {
             require(daysOfWeek.isNotEmpty()) {

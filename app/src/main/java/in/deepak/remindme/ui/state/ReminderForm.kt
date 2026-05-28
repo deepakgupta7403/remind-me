@@ -29,6 +29,7 @@ data class ReminderForm(
     val enabled: Boolean = true,
     val type: ReminderType = ReminderType.INTERVAL,
     val category: Category = Category.Other,
+    val iconKey: String? = null,
 
     // Interval
     val intervalMinutes: Int = 60,
@@ -67,10 +68,11 @@ data class ReminderForm(
                     category = category,
                     intervalMinutes = intervalMinutes,
                     activeWindow = TimeWindow(activeWindowStart, activeWindowEnd),
+                    iconKey = iconKey,
                 )
                 ReminderType.ONE_TIME -> {
                     val trigger = triggerAtEpochMillis ?: return null
-                    Reminder.OneTime(id, title.trim(), enabled, category, trigger)
+                    Reminder.OneTime(id, title.trim(), enabled, category, trigger, iconKey)
                 }
                 ReminderType.DAILY -> Reminder.Daily(
                     id = id,
@@ -80,6 +82,7 @@ data class ReminderForm(
                     timeOfDay = timeOfDay,
                     minutesBefore = minutesBefore.coerceAtLeast(0),
                     skipWeekends = skipWeekends,
+                    iconKey = iconKey,
                 )
                 ReminderType.WEEKLY -> Reminder.Weekly(
                     id = id,
@@ -88,6 +91,7 @@ data class ReminderForm(
                     category = category,
                     timeOfDay = timeOfDay,
                     daysOfWeek = daysOfWeek,
+                    iconKey = iconKey,
                 )
             }
         }.getOrNull()
@@ -100,6 +104,7 @@ data class ReminderForm(
                 title = reminder.title,
                 enabled = reminder.enabled,
                 category = reminder.category,
+                iconKey = reminder.iconKey,
                 type = ReminderType.INTERVAL,
                 intervalMinutes = reminder.intervalMinutes,
                 activeWindowStart = reminder.activeWindow.start,
@@ -110,6 +115,7 @@ data class ReminderForm(
                 title = reminder.title,
                 enabled = reminder.enabled,
                 category = reminder.category,
+                iconKey = reminder.iconKey,
                 type = ReminderType.ONE_TIME,
                 triggerAtEpochMillis = reminder.triggerAtEpochMillis,
             )
@@ -118,6 +124,7 @@ data class ReminderForm(
                 title = reminder.title,
                 enabled = reminder.enabled,
                 category = reminder.category,
+                iconKey = reminder.iconKey,
                 type = ReminderType.DAILY,
                 timeOfDay = reminder.timeOfDay,
                 minutesBefore = reminder.minutesBefore,
@@ -128,6 +135,7 @@ data class ReminderForm(
                 title = reminder.title,
                 enabled = reminder.enabled,
                 category = reminder.category,
+                iconKey = reminder.iconKey,
                 type = ReminderType.WEEKLY,
                 timeOfDay = reminder.timeOfDay,
                 daysOfWeek = reminder.daysOfWeek,

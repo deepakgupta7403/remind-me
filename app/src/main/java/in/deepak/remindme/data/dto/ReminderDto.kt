@@ -18,6 +18,8 @@ data class ReminderDto(
     val type: String? = null,
     /** Category enum NAME — null on older files defaults to "Other" in the mapper. */
     val category: String? = null,
+    /** Icon-pack key — null on older files keeps the per-type default icon. */
+    val iconKey: String? = null,
 
     // INTERVAL
     val intervalMinutes: Int? = null,
