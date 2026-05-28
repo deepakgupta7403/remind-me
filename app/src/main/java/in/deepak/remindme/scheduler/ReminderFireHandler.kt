@@ -1,5 +1,6 @@
 package `in`.deepak.remindme.scheduler
 
+import `in`.deepak.remindme.data.preferences.ReminderActivityLog
 import `in`.deepak.remindme.domain.model.Reminder
 import `in`.deepak.remindme.domain.repository.ReminderRepository
 import `in`.deepak.remindme.notification.NotificationChannelDefinition
@@ -24,11 +25,14 @@ class ReminderFireHandler(
     private val repository: ReminderRepository,
     private val scheduler: AlarmScheduler,
     private val presenter: NotificationPresenter,
+    private val activityLog: ReminderActivityLog,
 ) {
 
     suspend fun onFired(reminderId: Long) {
         val reminder = repository.get(reminderId) ?: return
         if (!reminder.enabled) return
+
+        activityLog.recordFired(reminder.id)
 
         presenter.show(
             NotificationRequest(

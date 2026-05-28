@@ -23,6 +23,7 @@ import `in`.deepak.remindme.ui.screens.search.SearchScreen
 import `in`.deepak.remindme.ui.screens.search.SearchViewModel
 import `in`.deepak.remindme.ui.screens.settings.SettingsScreen
 import `in`.deepak.remindme.ui.screens.stats.StatsScreen
+import `in`.deepak.remindme.ui.screens.stats.StatsViewModel
 import `in`.deepak.remindme.ui.screens.templates.TemplatesScreen
 import `in`.deepak.remindme.ui.screens.templates.TemplatesViewModel
 
@@ -113,7 +114,20 @@ fun RemindMeNavHost(
         }
 
         composable(Destination.Stats.route) {
-            StatsScreen(onTabSelected = ::selectTab)
+            val statsViewModel: StatsViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer {
+                        StatsViewModel(
+                            repository = container.reminderRepository,
+                            activityLog = container.reminderActivityLog,
+                        )
+                    }
+                }
+            )
+            StatsScreen(
+                viewModel = statsViewModel,
+                onTabSelected = ::selectTab,
+            )
         }
 
         composable(Destination.Templates.route) {

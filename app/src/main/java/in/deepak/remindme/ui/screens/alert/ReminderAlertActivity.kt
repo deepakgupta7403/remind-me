@@ -106,6 +106,7 @@ class ReminderAlertActivity : ComponentActivity() {
                 ReminderAlertScreen(
                     reminder = reminder,
                     onDone = {
+                        container.reminderActivityLog.recordDone(reminderId)
                         container.notificationPresenter.cancel(notificationId)
                         finishAndRemoveTask()
                     },

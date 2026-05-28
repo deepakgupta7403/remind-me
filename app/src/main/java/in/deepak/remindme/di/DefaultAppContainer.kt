@@ -2,6 +2,7 @@ package `in`.deepak.remindme.di
 
 import android.content.Context
 import `in`.deepak.remindme.data.preferences.OnboardingPreferences
+import `in`.deepak.remindme.data.preferences.ReminderActivityLog
 import `in`.deepak.remindme.data.preferences.SearchPreferences
 import `in`.deepak.remindme.data.preferences.UserPreferences
 import `in`.deepak.remindme.data.repository.FileReminderRepository
@@ -38,6 +39,7 @@ class DefaultAppContainer(
             repository = reminderRepository,
             scheduler = alarmScheduler,
             presenter = notificationPresenter,
+            activityLog = reminderActivityLog,
         )
     }
 
@@ -51,5 +53,9 @@ class DefaultAppContainer(
 
     override val searchPreferences: SearchPreferences by lazy {
         SearchPreferences(appContext)
+    }
+
+    override val reminderActivityLog: ReminderActivityLog by lazy {
+        ReminderActivityLog(appContext)
     }
 }

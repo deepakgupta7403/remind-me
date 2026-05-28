@@ -1,6 +1,7 @@
 package `in`.deepak.remindme.di
 
 import `in`.deepak.remindme.data.preferences.OnboardingPreferences
+import `in`.deepak.remindme.data.preferences.ReminderActivityLog
 import `in`.deepak.remindme.data.preferences.SearchPreferences
 import `in`.deepak.remindme.data.preferences.UserPreferences
 import `in`.deepak.remindme.domain.repository.ReminderRepository
@@ -26,4 +27,5 @@ interface AppContainer {
     val onboardingPreferences: OnboardingPreferences
     val userPreferences: UserPreferences
     val searchPreferences: SearchPreferences
+    val reminderActivityLog: ReminderActivityLog
 }

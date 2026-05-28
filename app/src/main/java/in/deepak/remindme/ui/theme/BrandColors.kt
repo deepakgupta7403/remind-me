@@ -60,4 +60,13 @@ object BrandColors {
         val SkyBg: Color      @Composable @ReadOnlyComposable get() = colorResource(R.color.tile_sky_bg)
         val SkyFg: Color      @Composable @ReadOnlyComposable get() = colorResource(R.color.tile_sky_fg)
     }
+
+    /** GitHub-style intensity scale for the Stats heatmap (level 0 = empty). */
+    object Heat {
+        val Level0: Color @Composable @ReadOnlyComposable get() = colorResource(R.color.heat_0)
+        val Level1: Color @Composable @ReadOnlyComposable get() = colorResource(R.color.heat_1)
+        val Level2: Color @Composable @ReadOnlyComposable get() = colorResource(R.color.heat_2)
+        val Level3: Color @Composable @ReadOnlyComposable get() = colorResource(R.color.heat_3)
+        val Level4: Color @Composable @ReadOnlyComposable get() = colorResource(R.color.heat_4)
+    }
 }
