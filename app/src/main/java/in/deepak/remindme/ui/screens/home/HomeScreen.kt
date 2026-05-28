@@ -253,11 +253,13 @@ private fun Header(state: HomeUiState.Loaded, onSearch: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = greetingLine(state),
-                style = MaterialTheme.typography.bodyMedium,
-                color = BrandColors.TextBody,
-            )
+            greetingLine(state)?.let { line ->
+                Text(
+                    text = line,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = BrandColors.TextBody,
+                )
+            }
             Text(
                 text = countLine(state.totalToday),
                 style = MaterialTheme.typography.headlineSmall,
@@ -279,8 +281,12 @@ private fun Header(state: HomeUiState.Loaded, onSearch: () -> Unit) {
     }
 }
 
-private fun greetingLine(state: HomeUiState.Loaded): String =
-    if (state.userName.isBlank()) state.greeting else "${state.greeting}, ${state.userName}"
+/** Null when the greeting is turned off in Profile, so the header omits the line. */
+private fun greetingLine(state: HomeUiState.Loaded): String? = when {
+    !state.showGreeting    -> null
+    state.userName.isBlank() -> state.greeting
+    else                   -> "${state.greeting}, ${state.userName}"
+}
 
 private fun countLine(count: Int): String = when (count) {
     0    -> "Nothing on today"

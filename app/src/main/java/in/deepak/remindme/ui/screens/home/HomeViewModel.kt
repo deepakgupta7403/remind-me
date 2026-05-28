@@ -2,6 +2,7 @@ package `in`.deepak.remindme.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import `in`.deepak.remindme.data.preferences.GreetingStyle
 import `in`.deepak.remindme.data.preferences.UserPreferences
 import `in`.deepak.remindme.domain.model.Reminder
 import `in`.deepak.remindme.domain.repository.ReminderRepository
@@ -36,11 +37,9 @@ import java.time.ZoneId
 class HomeViewModel(
     private val repository: ReminderRepository,
     private val scheduler: AlarmScheduler,
-    userPreferences: UserPreferences,
+    private val userPreferences: UserPreferences,
     private val clock: Clock = Clock.systemDefaultZone(),
 ) : ViewModel() {
-
-    private val userName: String = userPreferences.userName
 
     // Tick every 30s so the "in X min" label and the Today/Upcoming split
     // refresh as the clock moves — otherwise the banner is frozen until a
@@ -106,9 +105,17 @@ class HomeViewModel(
             .filter { it.second != null }
             .minByOrNull { it.second!! }
 
+        // Profile prefs are read here (not cached in a val) so editing them in
+        // Settings → Profile reflects on the next tick without recreating the VM.
+        val greetingWord = when (userPreferences.greetingStyle) {
+            GreetingStyle.TimeBased -> greetingFor(LocalTime.now(clock))
+            GreetingStyle.AlwaysHello -> "Hello"
+        }
+
         return HomeUiState.Loaded(
-            greeting = greetingFor(LocalTime.now(clock)),
-            userName = userName,
+            greeting = greetingWord,
+            userName = userPreferences.userName,
+            showGreeting = userPreferences.showGreeting,
             totalToday = sortedToday.size,
             nextReminder = nextPair?.let { (r, fireAt) ->
                 NextReminderInfo(
@@ -161,6 +168,7 @@ sealed interface HomeUiState {
     data class Loaded(
         val greeting: String,
         val userName: String,
+        val showGreeting: Boolean,
         val totalToday: Int,
         val nextReminder: NextReminderInfo?,
         val today: List<Reminder>,

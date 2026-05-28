@@ -19,6 +19,8 @@ import `in`.deepak.remindme.ui.screens.edit.ReminderEditViewModel
 import `in`.deepak.remindme.ui.screens.home.HomeScreen
 import `in`.deepak.remindme.ui.screens.home.HomeViewModel
 import `in`.deepak.remindme.ui.screens.onboarding.OnboardingScreen
+import `in`.deepak.remindme.ui.screens.profile.ProfileScreen
+import `in`.deepak.remindme.ui.screens.profile.ProfileViewModel
 import `in`.deepak.remindme.ui.screens.search.SearchScreen
 import `in`.deepak.remindme.ui.screens.search.SearchViewModel
 import `in`.deepak.remindme.ui.screens.settings.SettingsScreen
@@ -148,7 +150,24 @@ fun RemindMeNavHost(
         }
 
         composable(Destination.Settings.route) {
-            SettingsScreen(onTabSelected = ::selectTab)
+            SettingsScreen(
+                onTabSelected = ::selectTab,
+                onOpenProfile = { navController.navigate(Destination.Profile.route) },
+            )
+        }
+
+        composable(Destination.Profile.route) {
+            val profileViewModel: ProfileViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer {
+                        ProfileViewModel(preferences = container.userPreferences)
+                    }
+                }
+            )
+            ProfileScreen(
+                viewModel = profileViewModel,
+                onBack = { navController.popBackStack() },
+            )
         }
 
         composable(

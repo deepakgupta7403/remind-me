@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -69,7 +70,10 @@ import kotlinx.coroutines.launch
  * [SettingsRow] call.
  */
 @Composable
-fun SettingsScreen(onTabSelected: (Destination) -> Unit) {
+fun SettingsScreen(
+    onTabSelected: (Destination) -> Unit,
+    onOpenProfile: () -> Unit = {},
+) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     fun comingSoon(label: String) {
@@ -104,6 +108,18 @@ fun SettingsScreen(onTabSelected: (Destination) -> Unit) {
                 fontWeight = FontWeight.Bold,
                 color = BrandColors.TextHeading,
             )
+            Spacer(Modifier.height(20.dp))
+
+            SettingsSection(label = "ACCOUNT") {
+                SettingsRow(
+                    icon = Icons.Filled.Person,
+                    title = "Profile",
+                    subtitle = "Your name, greeting & avatar",
+                    trailing = { TrailingValue(value = null, chevron = true) },
+                    onClick = onOpenProfile,
+                )
+            }
+
             Spacer(Modifier.height(20.dp))
 
             SettingsSection(label = "NOTIFICATIONS") {

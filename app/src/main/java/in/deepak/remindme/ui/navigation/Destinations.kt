@@ -22,6 +22,9 @@ sealed class Destination(val route: String) {
     // Search.
     data object Search : Destination("search")
 
+    // Profile editor (reached from Settings).
+    data object Profile : Destination("profile")
+
     // Add/Edit reminder flow.
     data object Edit : Destination("edit?id={id}") {
         const val ARG_ID = "id"
