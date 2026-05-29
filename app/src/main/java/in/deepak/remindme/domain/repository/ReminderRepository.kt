@@ -7,8 +7,8 @@ import kotlinx.coroutines.flow.Flow
  * Abstract data source for reminders.
  *
  * The whole app (ViewModels, scheduler, BootReceiver) goes through this
- * interface. The current implementation is a JSON file (see
- * `FileReminderRepository`); when we revisit Room, only the impl changes.
+ * interface. The production implementation is Room-backed
+ * (`RoomReminderRepository`); swapping storage only changes the impl.
  *
  * All mutating methods are `suspend` so callers compose with coroutines and
  * the impl can do I/O off the main thread without leaking the threading model.

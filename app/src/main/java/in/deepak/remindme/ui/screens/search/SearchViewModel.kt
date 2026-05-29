@@ -3,8 +3,8 @@ package `in`.deepak.remindme.ui.screens.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import `in`.deepak.remindme.data.preferences.SearchPreferences
+import `in`.deepak.remindme.data.repository.TemplateRepository
 import `in`.deepak.remindme.data.templates.ReminderTemplate
-import `in`.deepak.remindme.data.templates.TemplateCatalog
 import `in`.deepak.remindme.domain.model.Category
 import `in`.deepak.remindme.domain.model.Reminder
 import `in`.deepak.remindme.domain.repository.ReminderRepository
@@ -39,6 +39,7 @@ class SearchViewModel(
     private val repository: ReminderRepository,
     private val scheduler: AlarmScheduler,
     private val searchPreferences: SearchPreferences,
+    private val templateRepository: TemplateRepository,
     private val clock: Clock = Clock.systemDefaultZone(),
 ) : ViewModel() {
 
@@ -49,7 +50,8 @@ class SearchViewModel(
         repository.observeAll(),
         filters,
         recent,
-    ) { reminders, f, r -> build(reminders, f, r) }
+        templateRepository.observeAll(),
+    ) { reminders, f, r, templates -> build(reminders, f, r, templates) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
@@ -123,6 +125,7 @@ class SearchViewModel(
         reminders: List<Reminder>,
         f: SearchFilters,
         recent: List<String>,
+        allTemplates: List<ReminderTemplate>,
     ): SearchUiState {
         val now = clock.instant()
         val results = reminders
@@ -135,7 +138,7 @@ class SearchViewModel(
             .toList()
 
         val templateMatches = if (f.query.isBlank()) emptyList() else
-            TemplateCatalog.all.filter { it.title.contains(f.query.trim(), ignoreCase = true) }
+            allTemplates.filter { it.title.contains(f.query.trim(), ignoreCase = true) }
 
         return SearchUiState(
             filters = f,

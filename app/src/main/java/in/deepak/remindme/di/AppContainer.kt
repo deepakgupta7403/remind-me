@@ -3,7 +3,9 @@ package `in`.deepak.remindme.di
 import `in`.deepak.remindme.data.preferences.OnboardingPreferences
 import `in`.deepak.remindme.data.preferences.ReminderActivityLog
 import `in`.deepak.remindme.data.preferences.SearchPreferences
+import `in`.deepak.remindme.data.db.LegacyDataImporter
 import `in`.deepak.remindme.data.preferences.UserPreferences
+import `in`.deepak.remindme.data.repository.TemplateRepository
 import `in`.deepak.remindme.domain.repository.ReminderRepository
 import `in`.deepak.remindme.notification.NotificationPresenter
 import `in`.deepak.remindme.scheduler.AlarmScheduler
@@ -22,10 +24,14 @@ import `in`.deepak.remindme.scheduler.ReminderFireHandler
 interface AppContainer {
     val notificationPresenter: NotificationPresenter
     val reminderRepository: ReminderRepository
+    val templateRepository: TemplateRepository
     val alarmScheduler: AlarmScheduler
     val reminderFireHandler: ReminderFireHandler
     val onboardingPreferences: OnboardingPreferences
     val userPreferences: UserPreferences
     val searchPreferences: SearchPreferences
     val reminderActivityLog: ReminderActivityLog
+
+    /** One-time legacy-file → Room import, run at app start. */
+    val legacyDataImporter: LegacyDataImporter
 }

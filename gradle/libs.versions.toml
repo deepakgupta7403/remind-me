@@ -14,8 +14,17 @@ navigationCompose = "2.8.5"
 # Coroutines
 coroutines = "1.9.0"
 
-# Persistence (JSON file via Gson — Room deferred until KSP/AGP 9 pairing stabilises)
+# Persistence
+# Gson is retained only for reading legacy on-disk data during the one-time
+# Room import (reminders.json + the stats SharedPreferences blob).
 gson = "2.11.0"
+# Room + KSP. KSP is version-locked to the Kotlin compiler (2.1.0); bump both
+# together. If AGP 9.1.1 rejects this KSP build, move to the newest published
+# 2.1.0-x KSP and the matching Room.
+room = "2.7.1"
+# KSP version is locked to the Kotlin compiler AGP 9.1.1 bundles (2.2.10),
+# NOT the `kotlin` ref above (which only versions the Compose plugin).
+ksp = "2.2.10-2.0.2"
 
 # Testing
 junit = "4.13.2"
@@ -51,6 +60,10 @@ kotlinx-coroutines-android              = { group = "org.jetbrains.kotlinx",  na
 # The repository interface insulates the rest of the app, so swapping to Room
 # later is a one-impl change.
 gson                                    = { group = "com.google.code.gson",   name = "gson",                           version.ref = "gson" }
+# Room: runtime + ktx (coroutine/Flow DAOs), compiler runs through KSP.
+androidx-room-runtime                   = { group = "androidx.room",          name = "room-runtime",                   version.ref = "room" }
+androidx-room-ktx                       = { group = "androidx.room",          name = "room-ktx",                       version.ref = "room" }
+androidx-room-compiler                  = { group = "androidx.room",          name = "room-compiler",                  version.ref = "room" }
 
 # --- Testing ---
 junit                                   = { group = "junit",                  name = "junit",                          version.ref = "junit" }
@@ -63,6 +76,7 @@ androidx-compose-ui-test-manifest       = { group = "androidx.compose.ui",    na
 # Note: AGP 9.x bundles the Kotlin Android plugin, so we do NOT apply
 # `org.jetbrains.kotlin.android` separately — doing so collides on the
 # `kotlin` extension. The Compose compiler plugin is still applied explicitly.
-# KSP is added in Step 4 alongside Room.
 android-application = { id = "com.android.application",                version.ref = "agp" }
 kotlin-compose      = { id = "org.jetbrains.kotlin.plugin.compose",    version.ref = "kotlin" }
+# KSP drives Room's annotation processor. Applied in app/build.gradle.
+ksp                 = { id = "com.google.devtools.ksp",                version.ref = "ksp" }

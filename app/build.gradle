@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -53,6 +54,13 @@ kotlin {
     jvmToolchain(17)
 }
 
+// Export Room's generated schema JSON (app/schemas) so future DB version bumps
+// + migrations are reviewable in git. When migration tests are added, wire this
+// dir in as an androidTest asset so MigrationTestHelper can read old schemas.
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 dependencies {
     // --- Core Android / Lifecycle ---
     implementation libs.androidx.core.ktx
@@ -75,7 +83,12 @@ dependencies {
     // --- Coroutines ---
     implementation libs.kotlinx.coroutines.android
 
-    // --- Persistence (Gson JSON file repo; Room TBD) ---
+    // --- Persistence ---
+    // Room is the system of record (reminders, stats, templates).
+    implementation libs.androidx.room.runtime
+    implementation libs.androidx.room.ktx
+    ksp libs.androidx.room.compiler
+    // Gson: legacy-import reader only (old reminders.json + stats prefs).
     implementation libs.gson
 
     // --- Unit tests ---

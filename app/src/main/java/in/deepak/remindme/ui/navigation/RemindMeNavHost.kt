@@ -103,6 +103,7 @@ fun RemindMeNavHost(
                             repository = container.reminderRepository,
                             scheduler = container.alarmScheduler,
                             searchPreferences = container.searchPreferences,
+                            templateRepository = container.templateRepository,
                         )
                     }
                 }
@@ -139,6 +140,7 @@ fun RemindMeNavHost(
                         TemplatesViewModel(
                             repository = container.reminderRepository,
                             scheduler = container.alarmScheduler,
+                            templateRepository = container.templateRepository,
                         )
                     }
                 }

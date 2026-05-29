@@ -2,8 +2,8 @@ package `in`.deepak.remindme.ui.screens.templates
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import `in`.deepak.remindme.data.repository.TemplateRepository
 import `in`.deepak.remindme.data.templates.ReminderTemplate
-import `in`.deepak.remindme.data.templates.TemplateCatalog
 import `in`.deepak.remindme.data.templates.TemplateTag
 import `in`.deepak.remindme.domain.repository.ReminderRepository
 import `in`.deepak.remindme.scheduler.AlarmScheduler
@@ -16,8 +16,9 @@ import kotlinx.coroutines.launch
 /**
  * Templates screen state.
  *
- * Catalog is loaded once from [TemplateCatalog]; filtering by query and tag
- * happens against the in-memory list.
+ * Templates are read from [TemplateRepository] (Room-backed); the catalog is
+ * seeded into the DB once at app start. Filtering by query and tag happens
+ * against the observed list in memory.
  *
  * "Apply template" upserts a reminder and arms its alarm — the user lands back
  * on Home and sees the new card, no editor step required. They can still tweak
@@ -26,16 +27,25 @@ import kotlinx.coroutines.launch
 class TemplatesViewModel(
     private val repository: ReminderRepository,
     private val scheduler: AlarmScheduler,
+    private val templateRepository: TemplateRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(
         TemplatesUiState(
             query = "",
             selectedTag = null,
-            allTemplates = TemplateCatalog.all,
+            allTemplates = emptyList(),
         )
     )
     val state: StateFlow<TemplatesUiState> = _state.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            templateRepository.observeAll().collect { templates ->
+                _state.update { it.copy(allTemplates = templates) }
+            }
+        }
+    }
 
     fun setQuery(value: String) {
         _state.update { it.copy(query = value) }

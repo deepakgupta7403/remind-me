@@ -44,7 +44,7 @@ If you're considering building a personal app and aren't sure where to start, th
 
 - **Language:** Kotlin (JVM 17)
 - **UI:** Jetpack Compose with Material 3
-- **Local storage:** JSON file via Gson (`FileReminderRepository`); Room migration planned
+- **Local storage:** Room (reminders, activity stats, templates) via `RemindMeDatabase`; small session/identity state (onboarding flag, profile, search history) stays in SharedPreferences. Pre-Room data is migrated into Room once on first launch
 - **Scheduling:** `AlarmManager` with exact alarms, re-armed per fire; a short-lived `shortService` foreground service hands off to the full-screen alarm activity so the takeover works on locked **and** unlocked devices (bypasses Android 12+ background-activity-launch restrictions)
 - **Architecture:** Single Activity + Compose navigation, MVVM with a `ViewModel` per screen, manual DI via `AppContainer` (no Hilt), `sealed interface Reminder` so adding a new reminder type lights up every site the compiler needs you to handle
 
@@ -67,7 +67,7 @@ Open in Android Studio (Iguana or newer) for normal Run / Debug.
 ![minSdk](https://img.shields.io/badge/minSdk-33-blue)
 ![AGP](https://img.shields.io/badge/AGP-9.1-success)
 
-🚧 **In active development.** Core scheduling, notifications, and the full-screen alarm flow are working. UI polish, streak tracking, and the Room migration are in progress — expect breaking changes.
+🚧 **In active development.** Core scheduling, notifications, the full-screen alarm flow, and Room-backed storage are working. UI polish and streak tracking are in progress — expect breaking changes.
 
 ## License
 

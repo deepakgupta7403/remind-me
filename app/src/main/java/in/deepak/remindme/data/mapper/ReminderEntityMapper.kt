@@ -1,20 +1,23 @@
 package `in`.deepak.remindme.data.mapper
 
+import `in`.deepak.remindme.data.db.ReminderEntity
 import `in`.deepak.remindme.data.dto.ReminderDto
 import `in`.deepak.remindme.domain.model.Reminder
 import `in`.deepak.remindme.domain.model.TimeOfDay
 import `in`.deepak.remindme.domain.model.TimeWindow
 
 /**
- * Domain ↔ DTO mapping lives here, not in the repository or the model.
+ * Domain ↔ Room entity mapping. Mirrors the DTO mapper in [ReminderMapper] one
+ * branch per reminder type, but against [ReminderEntity]. Reuses the shared
+ * [encodeDays]/[decodeDays]/[decodeCategory] codecs and the [ReminderDto] type
+ * constants so the type-string vocabulary stays single-sourced.
  *
- * Keeping it as top-level functions (no class) means:
- *  - testable without instantiation
- *  - mapper grows linearly with new reminder types (one new branch in each direction)
+ * [toDomainOrNull] returns null for a malformed row or an unknown `type`, so a
+ * column written by a newer build decodes "as much as it can" rather than
+ * crashing — same forgiving contract the file repo had.
  */
-
-internal fun Reminder.toDto(): ReminderDto = when (this) {
-    is Reminder.Interval -> ReminderDto(
+internal fun Reminder.toEntity(): ReminderEntity = when (this) {
+    is Reminder.Interval -> ReminderEntity(
         id = id,
         title = title,
         enabled = enabled,
@@ -26,7 +29,7 @@ internal fun Reminder.toDto(): ReminderDto = when (this) {
         activeEndMinute = activeWindow.end.minuteOfDay,
     )
 
-    is Reminder.OneTime -> ReminderDto(
+    is Reminder.OneTime -> ReminderEntity(
         id = id,
         title = title,
         enabled = enabled,
@@ -36,7 +39,7 @@ internal fun Reminder.toDto(): ReminderDto = when (this) {
         triggerAtEpochMillis = triggerAtEpochMillis,
     )
 
-    is Reminder.Daily -> ReminderDto(
+    is Reminder.Daily -> ReminderEntity(
         id = id,
         title = title,
         enabled = enabled,
@@ -48,7 +51,7 @@ internal fun Reminder.toDto(): ReminderDto = when (this) {
         skipWeekends = skipWeekends,
     )
 
-    is Reminder.Weekly -> ReminderDto(
+    is Reminder.Weekly -> ReminderEntity(
         id = id,
         title = title,
         enabled = enabled,
@@ -60,18 +63,10 @@ internal fun Reminder.toDto(): ReminderDto = when (this) {
     )
 }
 
-/**
- * Returns null if [ReminderDto] is malformed or carries an unknown `type` — that
- * way a future-versioned JSON file decodes "as much as it can" rather than
- * crashing the app at startup.
- */
-internal fun ReminderDto.toDomainOrNull(): Reminder? {
-    val id = this.id ?: return null
-    val title = this.title ?: return null
-    val enabled = this.enabled ?: return null
-    val category = decodeCategory(this.category)
+internal fun ReminderEntity.toDomainOrNull(): Reminder? {
+    val category = decodeCategory(category)
 
-    return when (this.type) {
+    return when (type) {
         ReminderDto.TYPE_INTERVAL -> {
             val interval = intervalMinutes ?: return null
             val startMin = activeStartMinute ?: return null
