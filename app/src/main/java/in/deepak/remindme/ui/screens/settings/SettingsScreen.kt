@@ -1,5 +1,11 @@
 package `in`.deepak.remindme.ui.screens.settings
 
+import android.app.Activity
+import android.content.Intent
+import android.media.RingtoneManager
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,9 +32,12 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -48,9 +57,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.IntentCompat
+import `in`.deepak.remindme.RemindMeApp
 import `in`.deepak.remindme.ui.navigation.Destination
 import `in`.deepak.remindme.ui.screens.common.AppBottomNavigation
 import `in`.deepak.remindme.ui.theme.BrandColors
@@ -59,11 +71,13 @@ import kotlinx.coroutines.launch
 /**
  * Settings tab.
  *
- * The screen is intentionally just a static surface of grouped rows for now —
- * the backing features (custom sound, DND window, accent picker, backup) don't
- * exist yet, so taps show a "Coming soon" snackbar. UI shipping ahead of the
- * domain is a deliberate choice: the design comp drives layout, and the
- * placeholders make it obvious which features still need to be built.
+ * Most rows are still a static surface — the backing features (DND window,
+ * accent picker, backup) don't exist yet, so those taps show a "Coming soon"
+ * snackbar. "Default sound" is live: it opens the system ringtone picker and
+ * persists the choice via [UserPreferences], which the full-screen alarm reads
+ * at fire time. UI shipping ahead of the domain is a deliberate choice — the
+ * design comp drives layout, and the placeholders make it obvious which
+ * features still need to be built.
  *
  * Sections: Notifications, Quiet Hours, Appearance, Data. To add a new row,
  * append to the relevant [SettingsSection] block — each row is one
@@ -80,8 +94,58 @@ fun SettingsScreen(
         scope.launch { snackbarHostState.showSnackbar("$label is coming soon.") }
     }
 
-    var vibrationOn   by rememberSaveable { mutableStateOf(true) }
-    var dndOn         by rememberSaveable { mutableStateOf(true) }
+    val context = LocalContext.current
+    val userPrefs = remember(context) {
+        (context.applicationContext as RemindMeApp).container.userPreferences
+    }
+
+    // Persisted so the alarm honours it; seed from prefs, write back on toggle.
+    var vibrationOn by rememberSaveable { mutableStateOf(userPrefs.vibrationEnabled) }
+    var dndOn       by rememberSaveable { mutableStateOf(true) }
+
+    // Snooze duration: seed from prefs, persist on pick. A small dialog of fixed
+    // options keeps it to a single tap and avoids free-form minute entry.
+    var snoozeMinutes  by rememberSaveable { mutableStateOf(userPrefs.snoozeMinutes) }
+    var showSnoozeDialog by rememberSaveable { mutableStateOf(false) }
+
+    // Default-sound picker. We persist the choice immediately and surface its
+    // human label as the row value; the alarm reads the URI back at fire time.
+    var soundLabel by remember { mutableStateOf(userPrefs.alarmSoundLabel) }
+    val soundPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val picked: Uri? = result.data?.let {
+                IntentCompat.getParcelableExtra(it, RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
+            }
+            // A null picked URI means the user chose "Silent"; store "" for it.
+            userPrefs.alarmSoundUri = picked?.toString() ?: ""
+            val label = when (picked) {
+                null -> "Silent"
+                else -> RingtoneManager.getRingtone(context, picked)?.getTitle(context) ?: "Custom sound"
+            }
+            userPrefs.alarmSoundLabel = label
+            soundLabel = label
+        }
+    }
+    fun openSoundPicker() {
+        val existing = userPrefs.alarmSoundUri
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { Uri.parse(it) }
+            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+        val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+            putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALARM)
+            putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Default sound")
+            putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+            putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
+            putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, existing)
+        }
+        soundPicker.launch(intent)
+    }
+    fun setVibration(enabled: Boolean) {
+        vibrationOn = enabled
+        userPrefs.vibrationEnabled = enabled
+    }
 
     Scaffold(
         containerColor = BrandColors.PageBackground,
@@ -126,8 +190,8 @@ fun SettingsScreen(
                 SettingsRow(
                     icon = Icons.Filled.VolumeUp,
                     title = "Default sound",
-                    trailing = { TrailingValue(value = "Gentle chime", chevron = true) },
-                    onClick = { comingSoon("Sound picker") },
+                    trailing = { TrailingValue(value = soundLabel, chevron = true) },
+                    onClick = { openSoundPicker() },
                 )
                 Divider()
                 SettingsRow(
@@ -136,18 +200,18 @@ fun SettingsScreen(
                     trailing = {
                         Switch(
                             checked = vibrationOn,
-                            onCheckedChange = { vibrationOn = it },
+                            onCheckedChange = { setVibration(it) },
                             colors = primarySwitchColors(),
                         )
                     },
-                    onClick = { vibrationOn = !vibrationOn },
+                    onClick = { setVibration(!vibrationOn) },
                 )
                 Divider()
                 SettingsRow(
                     icon = Icons.Filled.AccessTime,
                     title = "Snooze duration",
-                    trailing = { TrailingValue(value = "10 min", chevron = true) },
-                    onClick = { comingSoon("Snooze duration") },
+                    trailing = { TrailingValue(value = snoozeLabel(snoozeMinutes), chevron = true) },
+                    onClick = { showSnoozeDialog = true },
                 )
             }
 
@@ -197,6 +261,66 @@ fun SettingsScreen(
             Spacer(Modifier.height(24.dp))
         }
     }
+
+    if (showSnoozeDialog) {
+        SnoozeDurationDialog(
+            current = snoozeMinutes,
+            onSelect = { minutes ->
+                snoozeMinutes = minutes
+                userPrefs.snoozeMinutes = minutes
+                showSnoozeDialog = false
+            },
+            onDismiss = { showSnoozeDialog = false },
+        )
+    }
+}
+
+/** The snooze durations offered in the picker, in minutes. */
+private val SNOOZE_OPTIONS = listOf(5, 10, 15, 30, 60)
+
+/** Renders a minute count as the compact row value, e.g. "10 min" or "1 hr". */
+private fun snoozeLabel(minutes: Int): String = when {
+    minutes % 60 == 0 -> "${minutes / 60} hr"
+    else -> "$minutes min"
+}
+
+@Composable
+private fun SnoozeDurationDialog(
+    current: Int,
+    onSelect: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+        title = { Text("Snooze duration") },
+        text = {
+            Column {
+                SNOOZE_OPTIONS.forEach { minutes ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelect(minutes) }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(
+                            selected = minutes == current,
+                            onClick = { onSelect(minutes) },
+                        )
+                        Spacer(Modifier.size(8.dp))
+                        Text(
+                            text = snoozeLabel(minutes),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = BrandColors.TextHeading,
+                        )
+                    }
+                }
+            }
+        },
+    )
 }
 
 // --- Section / Row primitives ---------------------------------------------

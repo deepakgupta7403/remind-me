@@ -5,6 +5,7 @@ import android.content.Intent
 import android.media.AudioAttributes
 import android.media.Ringtone
 import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
@@ -70,7 +71,8 @@ import kotlinx.coroutines.launch
  *    locked or the user is in another full-screen app
  *
  * Mirrors `app/sampledata/nextstep/reminder_me.png` (Screen 4): big icon,
- * title, three actions (Mark as done / Snooze 10m / Skip).
+ * title, three actions (Mark as done / Snooze / Skip). The snooze delay is the
+ * user's configured duration from Settings (defaults to 10 minutes).
  *
  * Window flags (showWhenLocked / turnScreenOn) are declared in the manifest so
  * the activity also works when created cold by the full-screen intent. The
@@ -100,18 +102,21 @@ class ReminderAlertActivity : ComponentActivity() {
             reminderFlow.value = container.reminderRepository.get(reminderId)
         }
 
+        val snoozeMinutes = container.userPreferences.snoozeMinutes
+
         setContent {
             RemindMeTheme {
                 val reminder by reminderFlow.collectAsState()
                 ReminderAlertScreen(
                     reminder = reminder,
+                    snoozeMinutes = snoozeMinutes,
                     onDone = {
                         container.reminderActivityLog.recordDone(reminderId)
                         container.notificationPresenter.cancel(notificationId)
                         finishAndRemoveTask()
                     },
                     onSnooze = {
-                        container.alarmScheduler.snooze(reminderId, SNOOZE_DELAY_MILLIS)
+                        container.alarmScheduler.snooze(reminderId, snoozeMinutes * 60L * 1000L)
                         container.notificationPresenter.cancel(notificationId)
                         finishAndRemoveTask()
                     },
@@ -151,10 +156,17 @@ class ReminderAlertActivity : ComponentActivity() {
     }
 
     private fun startAlarmEffects() {
-        // Sound. We loop the system alarm tone using USAGE_ALARM so it plays
-        // on the alarm volume channel and bypasses ringer-silent / DND.
-        val alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+        // Sound. We loop the chosen alarm tone using USAGE_ALARM so it plays on
+        // the alarm volume channel and bypasses ringer-silent / DND. The user's
+        // Settings choice wins; null = use the system default, "" = Silent.
+        val prefs = (application as RemindMeApp).container.userPreferences
+        val stored = prefs.alarmSoundUri
+        val alarmUri: Uri? = when {
+            stored == null -> RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            stored.isEmpty() -> null
+            else -> Uri.parse(stored)
+        }
         if (alarmUri != null && ringtone == null) {
             ringtone = RingtoneManager.getRingtone(this, alarmUri)?.apply {
                 audioAttributes = AudioAttributes.Builder()
@@ -168,8 +180,9 @@ class ReminderAlertActivity : ComponentActivity() {
 
         // Vibration. Repeating waveform: wait 0ms, pulse, gap, pulse, … from
         // index 0 of the pattern. AMPLITUDE_DEFAULT lets the OEM pick a
-        // sensible intensity for each pulse.
-        if (vibrator == null) {
+        // sensible intensity for each pulse. Skipped entirely when the user has
+        // turned vibration off in Settings.
+        if (prefs.vibrationEnabled && vibrator == null) {
             vibrator = resolveVibrator()?.also { v ->
                 val pattern = ALARM_LOOP_VIBRATION_PATTERN
                 val amplitudes = IntArray(pattern.size) { i ->
@@ -213,7 +226,6 @@ class ReminderAlertActivity : ComponentActivity() {
     companion object {
         const val EXTRA_REMINDER_ID = "in.deepak.remindme.extra.ALERT_REMINDER_ID"
         private const val INVALID_ID = -1L
-        private const val SNOOZE_DELAY_MILLIS = 10L * 60L * 1000L
 
         // Wait 0ms, vibrate 600ms, pause 600ms — repeats from index 0 while
         // the alert screen is visible. Tuned to be insistent but not as
@@ -234,6 +246,7 @@ class ReminderAlertActivity : ComponentActivity() {
 @Composable
 private fun ReminderAlertScreen(
     reminder: Reminder?,
+    snoozeMinutes: Int,
     onDone: () -> Unit,
     onSnooze: () -> Unit,
     onSkip: () -> Unit,
@@ -321,7 +334,7 @@ private fun ReminderAlertScreen(
 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     SecondaryAlertButton(
-                        text = "Snooze 10m",
+                        text = "Snooze ${snoozeMinutes}m",
                         icon = Icons.Outlined.Snooze,
                         onClick = onSnooze,
                         modifier = Modifier.weight(1f),

@@ -37,12 +37,57 @@ class UserPreferences(context: Context) {
         get() = GreetingStyle.fromName(prefs.getString(KEY_GREETING_STYLE, null))
         set(value) { prefs.edit().putString(KEY_GREETING_STYLE, value.name).apply() }
 
+    /**
+     * The alarm sound the user picked in Settings, as a URI string. Three states:
+     *  - `null` → never chosen; the alarm falls back to the system alarm tone.
+     *  - `""`   → the user explicitly picked "Silent".
+     *  - else   → a `content://` ringtone URI.
+     *
+     * Read at fire time by `ReminderAlertActivity`; the notification channel's
+     * own sound is frozen at creation, so the chosen tone is applied by the
+     * full-screen alarm's looping ringtone rather than the channel.
+     */
+    var alarmSoundUri: String?
+        get() = if (prefs.contains(KEY_SOUND_URI)) prefs.getString(KEY_SOUND_URI, null).orEmpty() else null
+        set(value) {
+            prefs.edit().apply {
+                if (value == null) remove(KEY_SOUND_URI) else putString(KEY_SOUND_URI, value)
+            }.apply()
+        }
+
+    /** Human-readable name of [alarmSoundUri], shown as the Settings row value. */
+    var alarmSoundLabel: String
+        get() = prefs.getString(KEY_SOUND_LABEL, DEFAULT_SOUND_LABEL).orEmpty()
+        set(value) { prefs.edit().putString(KEY_SOUND_LABEL, value).apply() }
+
+    /**
+     * Whether the full-screen alarm vibrates. Defaults to on. Read at fire time
+     * by `ReminderAlertActivity`; like the sound, the channel's own vibration is
+     * frozen at creation, so this gates the sustained alarm vibration instead.
+     */
+    var vibrationEnabled: Boolean
+        get() = prefs.getBoolean(KEY_VIBRATION, true)
+        set(value) { prefs.edit().putBoolean(KEY_VIBRATION, value).apply() }
+
+    /**
+     * How many minutes the alert screen's "Snooze" action defers a reminder by.
+     * Defaults to 10. Read at snooze time by `ReminderAlertActivity`.
+     */
+    var snoozeMinutes: Int
+        get() = prefs.getInt(KEY_SNOOZE_MIN, 10)
+        set(value) { prefs.edit().putInt(KEY_SNOOZE_MIN, value).apply() }
+
     private companion object {
         const val FILE = "remindme.user"
         const val KEY_NAME = "name"
         const val KEY_AVATAR = "avatar_color"
         const val KEY_SHOW_GREETING = "show_greeting"
         const val KEY_GREETING_STYLE = "greeting_style"
+        const val KEY_SOUND_URI = "alarm_sound_uri"
+        const val KEY_SOUND_LABEL = "alarm_sound_label"
+        const val DEFAULT_SOUND_LABEL = "Default alarm"
+        const val KEY_VIBRATION = "alarm_vibration"
+        const val KEY_SNOOZE_MIN = "snooze_minutes"
     }
 }
 
