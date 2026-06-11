@@ -109,6 +109,11 @@ class UserPreferences(context: Context) {
         else minuteOfDay >= start || minuteOfDay < end
     }
 
+    /** Light / Dark / follow-System. Drives [in.deepak.remindme.ui.theme.RemindMeTheme]. */
+    var themeMode: ThemeMode
+        get() = ThemeMode.fromName(prefs.getString(KEY_THEME, null))
+        set(value) { prefs.edit().putString(KEY_THEME, value.name).apply() }
+
     private companion object {
         const val FILE = "remindme.user"
         const val KEY_NAME = "name"
@@ -125,6 +130,7 @@ class UserPreferences(context: Context) {
         const val KEY_DND_END = "dnd_end_minute"
         const val DEFAULT_DND_START = 22 * 60 + 30
         const val DEFAULT_DND_END = 7 * 60
+        const val KEY_THEME = "theme_mode"
     }
 }
 
@@ -146,5 +152,25 @@ enum class GreetingStyle(val label: String) {
     companion object {
         fun fromName(name: String?): GreetingStyle =
             entries.firstOrNull { it.name == name } ?: TimeBased
+    }
+}
+
+/**
+ * Which colour scheme the app paints in. Persisted by [ThemeMode.name] so adding
+ * a value never breaks stored data — an unknown name falls back to [System].
+ */
+enum class ThemeMode(val label: String) {
+    /** Follow the OS light/dark setting. */
+    System("System"),
+
+    /** Always light, regardless of the OS. */
+    Light("Light"),
+
+    /** Always dark, regardless of the OS. */
+    Dark("Dark");
+
+    companion object {
+        fun fromName(name: String?): ThemeMode =
+            entries.firstOrNull { it.name == name } ?: System
     }
 }

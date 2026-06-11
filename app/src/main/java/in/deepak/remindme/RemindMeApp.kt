@@ -3,6 +3,7 @@ package `in`.deepak.remindme
 import android.app.Application
 import `in`.deepak.remindme.di.AppContainer
 import `in`.deepak.remindme.di.DefaultAppContainer
+import `in`.deepak.remindme.ui.theme.ThemeController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -30,6 +31,9 @@ class RemindMeApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container = DefaultAppContainer(applicationContext)
+        // Seed the theme before any Activity composes so the first frame paints
+        // in the user's chosen scheme (no light→dark flash on launch).
+        ThemeController.mode = container.userPreferences.themeMode
         container.notificationPresenter.ensureChannelsExist()
         appScope.launch { container.legacyDataImporter.runOnce() }
     }

@@ -65,9 +65,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.IntentCompat
 import `in`.deepak.remindme.RemindMeApp
+import `in`.deepak.remindme.data.preferences.ThemeMode
 import `in`.deepak.remindme.ui.navigation.Destination
 import `in`.deepak.remindme.ui.screens.common.AppBottomNavigation
 import `in`.deepak.remindme.ui.theme.BrandColors
+import `in`.deepak.remindme.ui.theme.ThemeController
 import kotlinx.coroutines.launch
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -113,6 +115,10 @@ fun SettingsScreen(
     var dndStart    by rememberSaveable { mutableStateOf(userPrefs.dndStartMinute) }
     var dndEnd      by rememberSaveable { mutableStateOf(userPrefs.dndEndMinute) }
     var showDndDialog by rememberSaveable { mutableStateOf(false) }
+
+    // Theme: the live value is ThemeController.mode (a reactive process-wide
+    // state), so the row label updates the instant the app re-themes.
+    var showThemeDialog by rememberSaveable { mutableStateOf(false) }
 
     // Snooze duration: seed from prefs, persist on pick. A small dialog of fixed
     // options keeps it to a single tap and avoids free-form minute entry.
@@ -263,8 +269,8 @@ fun SettingsScreen(
                 SettingsRow(
                     icon = Icons.Filled.DarkMode,
                     title = "Theme",
-                    trailing = { TrailingValue(value = "System", chevron = true) },
-                    onClick = { comingSoon("Theme picker") },
+                    trailing = { TrailingValue(value = ThemeController.mode.label, chevron = true) },
+                    onClick = { showThemeDialog = true },
                 )
                 Divider()
                 SettingsRow(
@@ -307,6 +313,18 @@ fun SettingsScreen(
             onPickStart = { pickTime(dndStart) { dndStart = it; userPrefs.dndStartMinute = it } },
             onPickEnd = { pickTime(dndEnd) { dndEnd = it; userPrefs.dndEndMinute = it } },
             onDismiss = { showDndDialog = false },
+        )
+    }
+
+    if (showThemeDialog) {
+        ThemePickerDialog(
+            current = ThemeController.mode,
+            onSelect = { mode ->
+                userPrefs.themeMode = mode
+                ThemeController.mode = mode   // re-themes the whole app instantly
+                showThemeDialog = false
+            },
+            onDismiss = { showThemeDialog = false },
         )
     }
 }
@@ -363,6 +381,45 @@ private fun SnoozeDurationDialog(
 private val CLOCK_FORMAT = DateTimeFormatter.ofPattern("h:mm a")
 private fun clockLabel(minuteOfDay: Int): String =
     LocalTime.of(minuteOfDay / 60, minuteOfDay % 60).format(CLOCK_FORMAT).lowercase()
+
+@Composable
+private fun ThemePickerDialog(
+    current: ThemeMode,
+    onSelect: (ThemeMode) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+        title = { Text("Theme") },
+        text = {
+            Column {
+                ThemeMode.entries.forEach { mode ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelect(mode) }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(
+                            selected = mode == current,
+                            onClick = { onSelect(mode) },
+                        )
+                        Spacer(Modifier.size(8.dp))
+                        Text(
+                            text = mode.label,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = BrandColors.TextHeading,
+                        )
+                    }
+                }
+            }
+        },
+    )
+}
 
 @Composable
 private fun QuietHoursDialog(
