@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import java.time.LocalTime
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -160,6 +161,12 @@ class ReminderAlertActivity : ComponentActivity() {
         // the alarm volume channel and bypasses ringer-silent / DND. The user's
         // Settings choice wins; null = use the system default, "" = Silent.
         val prefs = (application as RemindMeApp).container.userPreferences
+
+        // Quiet hours ("Do not disturb"): the alert still shows, but we mute the
+        // sound and vibration when the current time is inside the user's window.
+        val now = LocalTime.now()
+        val quiet = prefs.isQuietAt(now.hour * 60 + now.minute)
+
         val stored = prefs.alarmSoundUri
         val alarmUri: Uri? = when {
             stored == null -> RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
@@ -167,7 +174,7 @@ class ReminderAlertActivity : ComponentActivity() {
             stored.isEmpty() -> null
             else -> Uri.parse(stored)
         }
-        if (alarmUri != null && ringtone == null) {
+        if (!quiet && alarmUri != null && ringtone == null) {
             ringtone = RingtoneManager.getRingtone(this, alarmUri)?.apply {
                 audioAttributes = AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_ALARM)
@@ -180,9 +187,9 @@ class ReminderAlertActivity : ComponentActivity() {
 
         // Vibration. Repeating waveform: wait 0ms, pulse, gap, pulse, … from
         // index 0 of the pattern. AMPLITUDE_DEFAULT lets the OEM pick a
-        // sensible intensity for each pulse. Skipped entirely when the user has
-        // turned vibration off in Settings.
-        if (prefs.vibrationEnabled && vibrator == null) {
+        // sensible intensity for each pulse. Skipped when the user has turned
+        // vibration off in Settings, or while quiet hours are active.
+        if (!quiet && prefs.vibrationEnabled && vibrator == null) {
             vibrator = resolveVibrator()?.also { v ->
                 val pattern = ALARM_LOOP_VIBRATION_PATTERN
                 val amplitudes = IntArray(pattern.size) { i ->

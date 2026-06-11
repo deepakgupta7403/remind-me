@@ -77,6 +77,38 @@ class UserPreferences(context: Context) {
         get() = prefs.getInt(KEY_SNOOZE_MIN, 10)
         set(value) { prefs.edit().putInt(KEY_SNOOZE_MIN, value).apply() }
 
+    /**
+     * Quiet hours ("Do not disturb"). When on, reminders still fire and show the
+     * full-screen alert during the window — they're just silenced (no sound or
+     * vibration). Off by default so upgrading users aren't silently muted.
+     */
+    var dndEnabled: Boolean
+        get() = prefs.getBoolean(KEY_DND, false)
+        set(value) { prefs.edit().putBoolean(KEY_DND, value).apply() }
+
+    /** Quiet-hours start as minutes from midnight. Default 22:30. */
+    var dndStartMinute: Int
+        get() = prefs.getInt(KEY_DND_START, DEFAULT_DND_START)
+        set(value) { prefs.edit().putInt(KEY_DND_START, value).apply() }
+
+    /** Quiet-hours end as minutes from midnight. Default 07:00. */
+    var dndEndMinute: Int
+        get() = prefs.getInt(KEY_DND_END, DEFAULT_DND_END)
+        set(value) { prefs.edit().putInt(KEY_DND_END, value).apply() }
+
+    /**
+     * True when DND is on and [minuteOfDay] (minutes from midnight) falls inside
+     * the quiet-hours window. Handles windows that wrap past midnight, e.g.
+     * 22:30 → 07:00, where start > end.
+     */
+    fun isQuietAt(minuteOfDay: Int): Boolean {
+        if (!dndEnabled) return false
+        val start = dndStartMinute
+        val end = dndEndMinute
+        return if (start <= end) minuteOfDay in start until end
+        else minuteOfDay >= start || minuteOfDay < end
+    }
+
     private companion object {
         const val FILE = "remindme.user"
         const val KEY_NAME = "name"
@@ -88,6 +120,11 @@ class UserPreferences(context: Context) {
         const val DEFAULT_SOUND_LABEL = "Default alarm"
         const val KEY_VIBRATION = "alarm_vibration"
         const val KEY_SNOOZE_MIN = "snooze_minutes"
+        const val KEY_DND = "dnd_enabled"
+        const val KEY_DND_START = "dnd_start_minute"
+        const val KEY_DND_END = "dnd_end_minute"
+        const val DEFAULT_DND_START = 22 * 60 + 30
+        const val DEFAULT_DND_END = 7 * 60
     }
 }
 

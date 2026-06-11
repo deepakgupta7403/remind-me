@@ -1,9 +1,11 @@
 package `in`.deepak.remindme.ui.screens.settings
 
 import android.app.Activity
+import android.app.TimePickerDialog
 import android.content.Intent
 import android.media.RingtoneManager
 import android.net.Uri
+import android.text.format.DateFormat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -67,15 +69,18 @@ import `in`.deepak.remindme.ui.navigation.Destination
 import `in`.deepak.remindme.ui.screens.common.AppBottomNavigation
 import `in`.deepak.remindme.ui.theme.BrandColors
 import kotlinx.coroutines.launch
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 /**
  * Settings tab.
  *
- * Most rows are still a static surface — the backing features (DND window,
- * accent picker, backup) don't exist yet, so those taps show a "Coming soon"
- * snackbar. "Default sound" is live: it opens the system ringtone picker and
- * persists the choice via [UserPreferences], which the full-screen alarm reads
- * at fire time. UI shipping ahead of the domain is a deliberate choice — the
+ * Some rows are still a static surface — the backing features (accent picker,
+ * backup) don't exist yet, so those taps show a "Coming soon" snackbar. The
+ * Notifications and Quiet Hours rows are live: sound, vibration, snooze
+ * duration, and Do Not Disturb all persist via [UserPreferences], which the
+ * full-screen alarm reads at fire time. UI shipping ahead of the domain is a
+ * deliberate choice — the
  * design comp drives layout, and the placeholders make it obvious which
  * features still need to be built.
  *
@@ -101,7 +106,13 @@ fun SettingsScreen(
 
     // Persisted so the alarm honours it; seed from prefs, write back on toggle.
     var vibrationOn by rememberSaveable { mutableStateOf(userPrefs.vibrationEnabled) }
-    var dndOn       by rememberSaveable { mutableStateOf(true) }
+
+    // Do Not Disturb (quiet hours). Toggle silences alarms during the window;
+    // tapping the row opens the start/end time editor. All three persist.
+    var dndOn       by rememberSaveable { mutableStateOf(userPrefs.dndEnabled) }
+    var dndStart    by rememberSaveable { mutableStateOf(userPrefs.dndStartMinute) }
+    var dndEnd      by rememberSaveable { mutableStateOf(userPrefs.dndEndMinute) }
+    var showDndDialog by rememberSaveable { mutableStateOf(false) }
 
     // Snooze duration: seed from prefs, persist on pick. A small dialog of fixed
     // options keeps it to a single tap and avoids free-form minute entry.
@@ -145,6 +156,21 @@ fun SettingsScreen(
     fun setVibration(enabled: Boolean) {
         vibrationOn = enabled
         userPrefs.vibrationEnabled = enabled
+    }
+    fun setDnd(enabled: Boolean) {
+        dndOn = enabled
+        userPrefs.dndEnabled = enabled
+    }
+    // Opens the platform time picker seeded with [initialMinute] (minutes from
+    // midnight) and honours the device's 12/24-hour setting.
+    fun pickTime(initialMinute: Int, onPicked: (Int) -> Unit) {
+        TimePickerDialog(
+            context,
+            { _, hour, minute -> onPicked(hour * 60 + minute) },
+            initialMinute / 60,
+            initialMinute % 60,
+            DateFormat.is24HourFormat(context),
+        ).show()
     }
 
     Scaffold(
@@ -220,15 +246,15 @@ fun SettingsScreen(
                 SettingsRow(
                     icon = Icons.Filled.Bedtime,
                     title = "Do not disturb",
-                    subtitle = "10:30 pm – 7:00 am",
+                    subtitle = "${clockLabel(dndStart)} – ${clockLabel(dndEnd)}",
                     trailing = {
                         Switch(
                             checked = dndOn,
-                            onCheckedChange = { dndOn = it },
+                            onCheckedChange = { setDnd(it) },
                             colors = primarySwitchColors(),
                         )
                     },
-                    onClick = { dndOn = !dndOn },
+                    onClick = { showDndDialog = true },
                 )
             }
 
@@ -271,6 +297,16 @@ fun SettingsScreen(
                 showSnoozeDialog = false
             },
             onDismiss = { showSnoozeDialog = false },
+        )
+    }
+
+    if (showDndDialog) {
+        QuietHoursDialog(
+            startMinute = dndStart,
+            endMinute = dndEnd,
+            onPickStart = { pickTime(dndStart) { dndStart = it; userPrefs.dndStartMinute = it } },
+            onPickEnd = { pickTime(dndEnd) { dndEnd = it; userPrefs.dndEndMinute = it } },
+            onDismiss = { showDndDialog = false },
         )
     }
 }
@@ -321,6 +357,64 @@ private fun SnoozeDurationDialog(
             }
         },
     )
+}
+
+/** Formats minutes-from-midnight as a 12-hour clock label, e.g. "10:30 pm". */
+private val CLOCK_FORMAT = DateTimeFormatter.ofPattern("h:mm a")
+private fun clockLabel(minuteOfDay: Int): String =
+    LocalTime.of(minuteOfDay / 60, minuteOfDay % 60).format(CLOCK_FORMAT).lowercase()
+
+@Composable
+private fun QuietHoursDialog(
+    startMinute: Int,
+    endMinute: Int,
+    onPickStart: () -> Unit,
+    onPickEnd: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Done") }
+        },
+        title = { Text("Quiet hours") },
+        text = {
+            Column {
+                Text(
+                    text = "Reminders still appear during these hours — they just won't make a sound or vibrate.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = BrandColors.TextBody,
+                )
+                Spacer(Modifier.height(8.dp))
+                QuietHoursRow(label = "Start", value = clockLabel(startMinute), onClick = onPickStart)
+                QuietHoursRow(label = "End", value = clockLabel(endMinute), onClick = onPickEnd)
+            }
+        },
+    )
+}
+
+@Composable
+private fun QuietHoursRow(label: String, value: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = BrandColors.TextHeading,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyLarge,
+            color = BrandColors.Primary,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
 }
 
 // --- Section / Row primitives ---------------------------------------------
