@@ -3,6 +3,7 @@ package `in`.deepak.remindme
 import android.app.Application
 import `in`.deepak.remindme.di.AppContainer
 import `in`.deepak.remindme.di.DefaultAppContainer
+import `in`.deepak.remindme.ui.theme.AccentColor
 import `in`.deepak.remindme.ui.theme.ThemeController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -32,8 +33,9 @@ class RemindMeApp : Application() {
         super.onCreate()
         container = DefaultAppContainer(applicationContext)
         // Seed the theme before any Activity composes so the first frame paints
-        // in the user's chosen scheme (no light→dark flash on launch).
+        // in the user's chosen scheme + accent (no light→dark flash on launch).
         ThemeController.mode = container.userPreferences.themeMode
+        ThemeController.accent = AccentColor.fromName(container.userPreferences.accentColorName)
         container.notificationPresenter.ensureChannelsExist()
         appScope.launch { container.legacyDataImporter.runOnce() }
     }

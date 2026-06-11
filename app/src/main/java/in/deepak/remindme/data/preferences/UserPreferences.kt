@@ -114,6 +114,15 @@ class UserPreferences(context: Context) {
         get() = ThemeMode.fromName(prefs.getString(KEY_THEME, null))
         set(value) { prefs.edit().putString(KEY_THEME, value.name).apply() }
 
+    /**
+     * Name of the chosen accent colour (the app's primary hue). Stored as a bare
+     * string so this data-layer class stays free of the UI's `AccentColor` type;
+     * the theme maps the name back to colours. Defaults to "Indigo".
+     */
+    var accentColorName: String
+        get() = prefs.getString(KEY_ACCENT, DEFAULT_ACCENT).orEmpty()
+        set(value) { prefs.edit().putString(KEY_ACCENT, value).apply() }
+
     private companion object {
         const val FILE = "remindme.user"
         const val KEY_NAME = "name"
@@ -131,6 +140,8 @@ class UserPreferences(context: Context) {
         const val DEFAULT_DND_START = 22 * 60 + 30
         const val DEFAULT_DND_END = 7 * 60
         const val KEY_THEME = "theme_mode"
+        const val KEY_ACCENT = "accent_color"
+        const val DEFAULT_ACCENT = "Indigo"
     }
 }
 

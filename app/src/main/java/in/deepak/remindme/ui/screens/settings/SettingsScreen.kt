@@ -9,6 +9,7 @@ import android.text.format.DateFormat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,6 +28,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.ColorLens
@@ -68,6 +70,7 @@ import `in`.deepak.remindme.RemindMeApp
 import `in`.deepak.remindme.data.preferences.ThemeMode
 import `in`.deepak.remindme.ui.navigation.Destination
 import `in`.deepak.remindme.ui.screens.common.AppBottomNavigation
+import `in`.deepak.remindme.ui.theme.AccentColor
 import `in`.deepak.remindme.ui.theme.BrandColors
 import `in`.deepak.remindme.ui.theme.ThemeController
 import kotlinx.coroutines.launch
@@ -116,9 +119,10 @@ fun SettingsScreen(
     var dndEnd      by rememberSaveable { mutableStateOf(userPrefs.dndEndMinute) }
     var showDndDialog by rememberSaveable { mutableStateOf(false) }
 
-    // Theme: the live value is ThemeController.mode (a reactive process-wide
-    // state), so the row label updates the instant the app re-themes.
+    // Theme + accent: the live values are ThemeController.mode/.accent (reactive
+    // process-wide state), so the rows update the instant the app re-themes.
     var showThemeDialog by rememberSaveable { mutableStateOf(false) }
+    var showAccentDialog by rememberSaveable { mutableStateOf(false) }
 
     // Snooze duration: seed from prefs, persist on pick. A small dialog of fixed
     // options keeps it to a single tap and avoids free-form minute entry.
@@ -276,8 +280,8 @@ fun SettingsScreen(
                 SettingsRow(
                     icon = Icons.Filled.ColorLens,
                     title = "Accent color",
-                    trailing = { AccentDots() },
-                    onClick = { comingSoon("Accent color picker") },
+                    trailing = { AccentTrailing(label = ThemeController.accent.label) },
+                    onClick = { showAccentDialog = true },
                 )
             }
 
@@ -325,6 +329,18 @@ fun SettingsScreen(
                 showThemeDialog = false
             },
             onDismiss = { showThemeDialog = false },
+        )
+    }
+
+    if (showAccentDialog) {
+        AccentPickerDialog(
+            current = ThemeController.accent,
+            onSelect = { accent ->
+                userPrefs.accentColorName = accent.name
+                ThemeController.accent = accent   // recolours the whole app instantly
+                showAccentDialog = false
+            },
+            onDismiss = { showAccentDialog = false },
         )
     }
 }
@@ -556,19 +572,82 @@ private fun TrailingValue(value: String?, chevron: Boolean) {
 }
 
 @Composable
-private fun AccentDots() {
-    val accents = listOf(
-        BrandColors.Primary,
-        BrandColors.Tile.WeeklyFg,
-        BrandColors.Tile.DailyFg,
+private fun AccentTrailing(label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(18.dp)
+                .clip(CircleShape)
+                .background(BrandColors.Primary),
+        )
+        Spacer(Modifier.size(8.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = BrandColors.TextBody,
+        )
+        Spacer(Modifier.size(4.dp))
+        Icon(
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = BrandColors.TextBody,
+            modifier = Modifier.size(20.dp),
+        )
+    }
+}
+
+@Composable
+private fun AccentPickerDialog(
+    current: AccentColor,
+    onSelect: (AccentColor) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+        title = { Text("Accent color") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                // Fixed rows of four keep the grid tidy without an experimental
+                // FlowRow dependency.
+                AccentColor.entries.chunked(4).forEach { rowItems ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        rowItems.forEach { accent ->
+                            AccentSwatch(
+                                accent = accent,
+                                selected = accent == current,
+                                onClick = { onSelect(accent) },
+                            )
+                        }
+                    }
+                }
+            }
+        },
     )
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        accents.forEach { c ->
-            Box(
-                modifier = Modifier
-                    .size(16.dp)
-                    .clip(CircleShape)
-                    .background(c),
+}
+
+@Composable
+private fun AccentSwatch(accent: AccentColor, selected: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .clip(CircleShape)
+            .background(accent.primaryLight)
+            .then(
+                if (selected) Modifier.border(3.dp, BrandColors.TextHeading, CircleShape)
+                else Modifier
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (selected) {
+            Icon(
+                Icons.Filled.Check,
+                contentDescription = "Selected",
+                tint = accent.onPrimaryLight,
+                modifier = Modifier.size(22.dp),
             )
         }
     }

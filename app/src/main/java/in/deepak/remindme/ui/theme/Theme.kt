@@ -25,6 +25,7 @@ import `in`.deepak.remindme.data.preferences.ThemeMode
  */
 object ThemeController {
     var mode by mutableStateOf(ThemeMode.System)
+    var accent by mutableStateOf(AccentColor.Indigo)
 }
 
 /**
@@ -59,7 +60,13 @@ fun RemindMeTheme(
         darkTheme -> DarkColors
         else -> LightColors
     }
-    val brandPalette = if (darkTheme) DarkBrandPalette else LightBrandPalette
+    val accent = ThemeController.accent
+    val base = if (darkTheme) DarkBrandPalette else LightBrandPalette
+    val brandPalette = base.copy(
+        primary = if (darkTheme) accent.primaryDark else accent.primaryLight,
+        onPrimary = if (darkTheme) accent.onPrimaryDark else accent.onPrimaryLight,
+        primarySoft = if (darkTheme) accent.softDark else accent.softLight,
+    )
     CompositionLocalProvider(LocalBrandPalette provides brandPalette) {
         MaterialTheme(colorScheme = colorScheme, content = content)
     }
