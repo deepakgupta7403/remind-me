@@ -14,7 +14,7 @@
 .cxx
 local.properties
 
-# Release signing — keep secrets and keystore out of git
+# Release signing — keep secrets and keystore out of git (safe for a public repo)
 keystore.properties
 *.jks
 *.keystore
