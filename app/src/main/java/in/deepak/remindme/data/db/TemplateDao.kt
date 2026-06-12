@@ -19,6 +19,14 @@ interface TemplateDao {
     @Query("SELECT COUNT(*) FROM templates")
     suspend fun count(): Int
 
+    /** One-shot snapshot — used by backup export. */
+    @Query("SELECT * FROM templates ORDER BY displayOrder")
+    suspend fun getAll(): List<TemplateEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(entities: List<TemplateEntity>)
+
+    /** Wipe the table — used by backup restore (replace-all). */
+    @Query("DELETE FROM templates")
+    suspend fun deleteAll()
 }

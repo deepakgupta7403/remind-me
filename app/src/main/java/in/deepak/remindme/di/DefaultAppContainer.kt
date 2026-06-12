@@ -2,6 +2,7 @@ package `in`.deepak.remindme.di
 
 import android.content.Context
 import androidx.room.Room
+import `in`.deepak.remindme.data.backup.BackupManager
 import `in`.deepak.remindme.data.db.LegacyDataImporter
 import `in`.deepak.remindme.data.db.MigrationPreferences
 import `in`.deepak.remindme.data.db.RemindMeDatabase
@@ -74,6 +75,14 @@ class DefaultAppContainer(
 
     override val reminderActivityLog: ReminderActivityLog by lazy {
         ReminderActivityLog(database.activityDao())
+    }
+
+    override val backupManager: BackupManager by lazy {
+        BackupManager(
+            database = database,
+            userPreferences = userPreferences,
+            alarmScheduler = alarmScheduler,
+        )
     }
 
     override val legacyDataImporter: LegacyDataImporter by lazy {

@@ -1,5 +1,6 @@
 package `in`.deepak.remindme.di
 
+import `in`.deepak.remindme.data.backup.BackupManager
 import `in`.deepak.remindme.data.preferences.OnboardingPreferences
 import `in`.deepak.remindme.data.preferences.ReminderActivityLog
 import `in`.deepak.remindme.data.preferences.SearchPreferences
@@ -31,6 +32,9 @@ interface AppContainer {
     val userPreferences: UserPreferences
     val searchPreferences: SearchPreferences
     val reminderActivityLog: ReminderActivityLog
+
+    /** Local backup/restore (export & import the whole app to a JSON file). */
+    val backupManager: BackupManager
 
     /** One-time legacy-file → Room import, run at app start. */
     val legacyDataImporter: LegacyDataImporter

@@ -21,6 +21,14 @@ interface ActivityDao {
     @Query("SELECT * FROM activity_stats ORDER BY epochDay")
     fun observeAll(): Flow<List<ActivityStatEntity>>
 
+    /** One-shot snapshot — used by backup export. */
+    @Query("SELECT * FROM activity_stats ORDER BY epochDay")
+    suspend fun getAll(): List<ActivityStatEntity>
+
+    /** Wipe the table — used by backup restore (replace-all). */
+    @Query("DELETE FROM activity_stats")
+    suspend fun deleteAll()
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertIgnore(row: ActivityStatEntity)
 

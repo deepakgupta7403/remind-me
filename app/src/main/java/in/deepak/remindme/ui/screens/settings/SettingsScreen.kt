@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.TextButton
@@ -67,30 +68,32 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.IntentCompat
 import `in`.deepak.remindme.RemindMeApp
+import `in`.deepak.remindme.data.backup.BackupComponent
+import `in`.deepak.remindme.data.backup.BackupSummary
+import `in`.deepak.remindme.data.backup.ImportResult
 import `in`.deepak.remindme.data.preferences.ThemeMode
 import `in`.deepak.remindme.ui.navigation.Destination
 import `in`.deepak.remindme.ui.screens.common.AppBottomNavigation
 import `in`.deepak.remindme.ui.theme.AccentColor
 import `in`.deepak.remindme.ui.theme.BrandColors
 import `in`.deepak.remindme.ui.theme.ThemeController
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 /**
  * Settings tab.
  *
- * Some rows are still a static surface — the backing features (accent picker,
- * backup) don't exist yet, so those taps show a "Coming soon" snackbar. The
- * Notifications and Quiet Hours rows are live: sound, vibration, snooze
- * duration, and Do Not Disturb all persist via [UserPreferences], which the
- * full-screen alarm reads at fire time. UI shipping ahead of the domain is a
- * deliberate choice — the
- * design comp drives layout, and the placeholders make it obvious which
- * features still need to be built.
+ * Every row is now live. Notifications (sound, vibration, snooze) and Quiet
+ * Hours persist via [UserPreferences] and are read by the full-screen alarm at
+ * fire time; Appearance (theme, accent) drives the app-wide palette through
+ * `ThemeController`; Data offers local Backup & restore via [backupManager].
  *
- * Sections: Notifications, Quiet Hours, Appearance, Data. To add a new row,
- * append to the relevant [SettingsSection] block — each row is one
+ * Sections: Account, Notifications, Quiet Hours, Appearance, Data. To add a new
+ * row, append to the relevant [SettingsSection] block — each row is one
  * [SettingsRow] call.
  */
 @Composable
@@ -100,14 +103,11 @@ fun SettingsScreen(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    fun comingSoon(label: String) {
-        scope.launch { snackbarHostState.showSnackbar("$label is coming soon.") }
-    }
 
     val context = LocalContext.current
-    val userPrefs = remember(context) {
-        (context.applicationContext as RemindMeApp).container.userPreferences
-    }
+    val container = remember(context) { (context.applicationContext as RemindMeApp).container }
+    val userPrefs = container.userPreferences
+    val backupManager = container.backupManager
 
     // Persisted so the alarm honours it; seed from prefs, write back on toggle.
     var vibrationOn by rememberSaveable { mutableStateOf(userPrefs.vibrationEnabled) }
@@ -123,6 +123,17 @@ fun SettingsScreen(
     // process-wide state), so the rows update the instant the app re-themes.
     var showThemeDialog by rememberSaveable { mutableStateOf(false) }
     var showAccentDialog by rememberSaveable { mutableStateOf(false) }
+
+    // Backup & restore. The chooser offers Export / Restore. Export opens a
+    // component picker, then the file picker. Restore opens the file picker,
+    // peeks the file's contents, then a component picker that doubles as the
+    // (destructive) confirm step. The launchers open the system file picker.
+    var showBackupDialog by rememberSaveable { mutableStateOf(false) }
+    var showExportOptions by rememberSaveable { mutableStateOf(false) }
+    var exportSelection by remember { mutableStateOf(BackupComponent.entries.toSet()) }
+    // Held together: the raw file text plus what peek() found in it.
+    var pendingRestoreJson by remember { mutableStateOf<String?>(null) }
+    var pendingRestoreSummary by remember { mutableStateOf<BackupSummary?>(null) }
 
     // Snooze duration: seed from prefs, persist on pick. A small dialog of fixed
     // options keeps it to a single tap and avoids free-form minute entry.
@@ -181,6 +192,65 @@ fun SettingsScreen(
             initialMinute % 60,
             DateFormat.is24HourFormat(context),
         ).show()
+    }
+    suspend fun snackbar(message: String) = snackbarHostState.showSnackbar(message)
+
+    // --- Backup & restore --------------------------------------------------
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        val components = exportSelection
+        scope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                runCatching {
+                    val json = backupManager.exportToJson(components)
+                    context.contentResolver.openOutputStream(uri)?.use { it.write(json.toByteArray()) }
+                        ?: error("Couldn't open the chosen file")
+                }.isSuccess
+            }
+            snackbar(if (ok) "Backup saved." else "Couldn't save the backup.")
+        }
+    }
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        // Read + peek so the restore picker can show what's actually in the file.
+        scope.launch {
+            val json = withContext(Dispatchers.IO) {
+                runCatching {
+                    context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                }.getOrNull()
+            }
+            val summary = json?.let { backupManager.peek(it) }
+            if (json == null || summary == null) {
+                snackbar("This file isn't a readable RemindMe backup.")
+            } else {
+                pendingRestoreJson = json
+                pendingRestoreSummary = summary
+            }
+        }
+    }
+    fun runRestore(json: String, components: Set<BackupComponent>) {
+        scope.launch {
+            when (val result = backupManager.importFromJson(json, components)) {
+                is ImportResult.Failure -> snackbar(result.reason)
+                is ImportResult.Success -> {
+                    // Pull any restored settings back into the live UI + theme
+                    // (cheap no-op re-reads if settings weren't part of the restore).
+                    vibrationOn = userPrefs.vibrationEnabled
+                    dndOn = userPrefs.dndEnabled
+                    dndStart = userPrefs.dndStartMinute
+                    dndEnd = userPrefs.dndEndMinute
+                    snoozeMinutes = userPrefs.snoozeMinutes
+                    soundLabel = userPrefs.alarmSoundLabel
+                    ThemeController.mode = userPrefs.themeMode
+                    ThemeController.accent = AccentColor.fromName(userPrefs.accentColorName)
+                    snackbar("Restored ${describeRestored(result.restored)}.")
+                }
+            }
+        }
     }
 
     Scaffold(
@@ -289,9 +359,10 @@ fun SettingsScreen(
             SettingsSection(label = "DATA") {
                 SettingsRow(
                     icon = Icons.Filled.Backup,
-                    title = "Backup & sync",
+                    title = "Backup & restore",
+                    subtitle = "Export or import your data to a file",
                     trailing = { TrailingValue(value = null, chevron = true) },
-                    onClick = { comingSoon("Backup & sync") },
+                    onClick = { showBackupDialog = true },
                 )
             }
             Spacer(Modifier.height(24.dp))
@@ -343,7 +414,67 @@ fun SettingsScreen(
             onDismiss = { showAccentDialog = false },
         )
     }
+
+    if (showBackupDialog) {
+        BackupDialog(
+            onExport = {
+                showBackupDialog = false
+                showExportOptions = true
+            },
+            onRestore = {
+                showBackupDialog = false
+                importLauncher.launch(arrayOf("application/json", "application/octet-stream", "text/plain"))
+            },
+            onDismiss = { showBackupDialog = false },
+        )
+    }
+
+    if (showExportOptions) {
+        ComponentPickerDialog(
+            title = "Export backup",
+            description = "Choose what to include in the file.",
+            confirmLabel = "Export",
+            options = BackupComponent.entries.associateWith { null },
+            initialSelection = exportSelection,
+            destructive = false,
+            onConfirm = { selection ->
+                exportSelection = selection
+                showExportOptions = false
+                exportLauncher.launch("remindme-backup-${LocalDate.now()}.json")
+            },
+            onDismiss = { showExportOptions = false },
+        )
+    }
+
+    val restoreSummary = pendingRestoreSummary
+    val restoreJson = pendingRestoreJson
+    if (restoreSummary != null && restoreJson != null) {
+        ComponentPickerDialog(
+            title = "Restore from file",
+            description = "Selected data will replace what's on this device. This can't be undone.",
+            confirmLabel = "Restore",
+            options = restoreSummary.counts,
+            initialSelection = restoreSummary.present,
+            destructive = true,
+            onConfirm = { selection ->
+                pendingRestoreJson = null
+                pendingRestoreSummary = null
+                runRestore(restoreJson, selection)
+            },
+            onDismiss = {
+                pendingRestoreJson = null
+                pendingRestoreSummary = null
+            },
+        )
+    }
 }
+
+/** Joins restored-component counts into a human snackbar fragment. */
+private fun describeRestored(restored: Map<BackupComponent, Int>): String =
+    restored.entries.joinToString(", ") { (component, count) ->
+        if (component == BackupComponent.Settings) "settings"
+        else "$count ${component.label.lowercase()}"
+    }
 
 /** The snooze durations offered in the picker, in minutes. */
 private val SNOOZE_OPTIONS = listOf(5, 10, 15, 30, 60)
@@ -397,6 +528,122 @@ private fun SnoozeDurationDialog(
 private val CLOCK_FORMAT = DateTimeFormatter.ofPattern("h:mm a")
 private fun clockLabel(minuteOfDay: Int): String =
     LocalTime.of(minuteOfDay / 60, minuteOfDay % 60).format(CLOCK_FORMAT).lowercase()
+
+@Composable
+private fun BackupDialog(
+    onExport: () -> Unit,
+    onRestore: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+        title = { Text("Backup & restore") },
+        text = {
+            Column {
+                Text(
+                    text = "Save all your reminders, templates, stats and settings to a file, or restore from one. Everything stays on your device — there's no cloud account.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = BrandColors.TextBody,
+                )
+                Spacer(Modifier.height(8.dp))
+                BackupActionRow(label = "Export backup", onClick = onExport)
+                BackupActionRow(label = "Restore from file", onClick = onRestore)
+            }
+        },
+    )
+}
+
+@Composable
+private fun BackupActionRow(label: String, onClick: () -> Unit) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.bodyLarge,
+        color = BrandColors.Primary,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 14.dp),
+    )
+}
+
+/**
+ * Checkbox picker over [BackupComponent]s, shared by export and restore. Each
+ * option may carry a row count (e.g. restore shows "Reminders (5)"); a null
+ * count renders just the label (export, where counts aren't meaningful yet).
+ * The confirm button is disabled until at least one component is ticked, and is
+ * tinted danger when [destructive] (restore).
+ */
+@Composable
+private fun ComponentPickerDialog(
+    title: String,
+    description: String,
+    confirmLabel: String,
+    options: Map<BackupComponent, Int?>,
+    initialSelection: Set<BackupComponent>,
+    destructive: Boolean,
+    onConfirm: (Set<BackupComponent>) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var selection by remember { mutableStateOf(initialSelection) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(selection) },
+                enabled = selection.isNotEmpty(),
+            ) {
+                Text(
+                    text = confirmLabel,
+                    color = if (destructive) BrandColors.Danger else BrandColors.Primary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+        title = { Text(title) },
+        text = {
+            Column {
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = BrandColors.TextBody,
+                )
+                Spacer(Modifier.height(8.dp))
+                options.forEach { (component, count) ->
+                    val checked = component in selection
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                selection = if (checked) selection - component else selection + component
+                            }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(
+                            checked = checked,
+                            onCheckedChange = {
+                                selection = if (checked) selection - component else selection + component
+                            },
+                        )
+                        Spacer(Modifier.size(8.dp))
+                        Text(
+                            text = if (count != null) "${component.label} ($count)" else component.label,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = BrandColors.TextHeading,
+                        )
+                    }
+                }
+            }
+        },
+    )
+}
 
 @Composable
 private fun ThemePickerDialog(

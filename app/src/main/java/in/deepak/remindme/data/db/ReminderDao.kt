@@ -43,4 +43,8 @@ interface ReminderDao {
     /** Bulk insert preserving explicit ids — used by [LegacyDataImporter]. */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(entities: List<ReminderEntity>)
+
+    /** Wipe the table — used by backup restore (replace-all). */
+    @Query("DELETE FROM reminders")
+    suspend fun deleteAll()
 }
