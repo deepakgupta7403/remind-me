@@ -4,6 +4,16 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+// Release signing: secrets live in keystore.properties (gitignored, never committed).
+// If the file is absent (e.g. CI or a fresh clone) the release build stays unsigned
+// rather than failing — only a local machine with the keystore can sign a release.
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+def hasKeystore = keystorePropertiesFile.exists()
+if (hasKeystore) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace 'in.deepak.remindme'
     compileSdk {
@@ -25,10 +35,27 @@ android {
         }
     }
 
+    signingConfigs {
+        if (hasKeystore) {
+            release {
+                // Resolve relative to the project root, not the app/ module, so the
+                // keystore can live at the repo root (matches the keytool command).
+                storeFile rootProject.file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
+
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (hasKeystore) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 
